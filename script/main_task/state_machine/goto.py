@@ -26,6 +26,7 @@ class GoToFloor(smach.State, Logger):
         self.nav_module = NavModule("pumas")
 
     def execute(self, userdata):
+        #print(goto1)
         self.hsrif.whole_body.move_to_joint_positions(
             {
                 "arm_lift_joint": 0.0,

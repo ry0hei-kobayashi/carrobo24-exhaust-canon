@@ -9,6 +9,7 @@ import smach
 import smach_ros
 from hsrlib.hsrif import HSRInterfaces
 from state_machine import (
+    recog,
     deposit,
     goto,
     recog,
