@@ -89,7 +89,7 @@ class DepositObject(smach.State, Logger):
         }
 
     def execute(self, userdata):
-        get_object=userdata.objlist[0]
+        get_object=userdata.detected_obj[i].bbox.name
  
         if get_object in self.category_lsit["food"]:            
             category = "food"
@@ -122,8 +122,12 @@ class DepositObject(smach.State, Logger):
             sync=True
         )
 
+        x=deposit_locations[category][0]
+        y=deposit_locations[category][1]
+        yaw=deposit_locations[category][2]
+
         # navigation
-        goal = Pose2D(1.4, 0.0, np.deg2rad(-90.0))
+        goal = Pose2D(x, y, np.deg2rad(yaw))
         self.nav_module.nav_goal(goal, nav_type="pumas", nav_mode="abs", nav_timeout=0, goal_distance=0) # full definition
 
         self.hsrif.gripper.command(1.2)
@@ -137,7 +141,8 @@ class DepositObject(smach.State, Logger):
 
         if userdata.grasp_counter < 3:
             userdata.grasp_counter += 1
+            userdata.detected_obj.pop(0)
             return "next"
         else:
-            userdata.grasp_counter = 0:
+            userdata.grasp_counter = 0
             return "re_recog"

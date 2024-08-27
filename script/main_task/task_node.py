@@ -26,6 +26,7 @@ class StateMachine:
         self.sm = smach.StateMachine(outcomes=["exit"])
 
         self.sm.userdata.detected_obj = []
+        self.sm.userdata.depth = []
         self.sm.userdata.grasp_counter = 0
         self.sm.userdata.position = 0
         self.sm.userdata.search_locations = {
@@ -38,9 +39,12 @@ class StateMachine:
         self.sm.deposit_locations = {
             #key:{x,y,yaw}
             'kitchen':     (5.0, 5.0, 1.57  ), 
-            'drawer_left': (2.0, 1.0, -1.57 ), 
-            'food_tray_a':  (.0, .0, 1.57    ), 
-            'food_tray_b':  (.0, .0, 1.57    ) 
+            'tool': (2.0, 1.0, -1.57 ), 
+            'task': (2.0, 1.0, -1.57 ), 
+            'food':  (.0, .0, 1.57    ), 
+            'shape':  (.0, .0, 1.57    ),
+            'orientation':  (.0, .0, 1.57    ), 
+            'unknown':  (.0, .0, 1.57    ),
             }
 
         self.sm.userdata.locations = None
@@ -72,6 +76,7 @@ class StateMachine:
                     "failure": "GraspFromFloor",
                     "nothing" : "GoToFloor",
                 },
+            )
             smach.StateMachine.add(
                 "DepositObject",
                 deposit.DepositObject(["next", "re_recog"]),

@@ -5,14 +5,14 @@ from tamlib.utils import Logger
 
 class Recog(smach.State, Logger):
     def __init__(self, outcomes):
-        smach.State.__init__(self, outcomes=outcomes, input_keys=["detected_object"], output_keys=["detected_object"])
+        smach.State.__init__(self, outcomes=outcomes, input_keys=["detected_obj", 'position', 'depth'], output_keys=["detected_obj", 'depth'])
         Logger.__init__(self)
 
         # Service
         self.srv_detection = rospy.ServiceProxy(
             "hsr_head_rgbd/object_detection/service", ObjectDetectionService
         )
-        rospy.wait_for_service("hsr_head_rgbd/object_detection/service", timeout=10)
+        rospy.wait_for_service("hsr_head_rgbd/object_detection/service", timeout=1000)
 
     def execute(self, userdata):
         # Object detection request
@@ -22,8 +22,6 @@ class Recog(smach.State, Logger):
         if detections.is_detected is False:
             self.logwarn("No object detected.")
             return "failure"
-        
-        userdata.detected_object = []
 
         # Log the detected object information
         for i in range(len(detections.bbox)):
@@ -31,24 +29,26 @@ class Recog(smach.State, Logger):
             if label == 'toy_airplane':
                 continue
 
-            userdata.detected_object.append({
+            userdata.depth = detections.depth
+            userdata.detected_obj.append({
                 "bbox": detections.bbox[i],
-                "pose": detections.pose[i]
+                "pose": detections.pose[i],
+                "seg": detections.segments[i],
             })
-            # sm.userdata.detected_object.append(detections.is_detected)
-            # sm.userdata.detected_object.append(detections.depth)
-            # sm.userdata.detected_object.append(detections.rgb)
-            # sm.userdata.detected_object.append(detections.camera_info)
-            # sm.userdata.detected_object.append(detections.segments)
+            # sm.userdata.detected_obj.append(detections.is_detected)
+            # sm.userdata.detected_obj.append(detections.depth)
+            # sm.userdata.detected_obj.append(detections.rgb)
+            # sm.userdata.detected_obj.append(detections.camera_info)
+            # sm.userdata.detected_obj.append(detections.segments)
 
 
-            self.loginfo(f"Object {i}:")
-            self.loginfo(f"  Label: {label}")
+            # self.loginfo(f"Object {i}:")
+            # self.loginfo(f"  Label: {label}")
 
-            bbox = detections.bbox[i]
-            self.loginfo(f"  Bounding Box: x={bbox.x}, y={bbox.y}, width={bbox.w}, height={bbox.h}")
+            # bbox = detections.bbox[i]
+            # self.loginfo(f"  Bounding Box: x={bbox.x}, y={bbox.y}, width={bbox.w}, height={bbox.h}")
 
-            pose = detections.pose[i]
-            self.loginfo(f"  Pose: position={pose.position}, orientation={pose.orientation}")
+            # pose = detections.pose[i]
+            # self.loginfo(f"  Pose: position={pose.position}, orientation={pose.orientation}")
 
         return "next"

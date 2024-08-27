@@ -20,7 +20,8 @@ from geometry_msgs.msg import Pose, Point, Quaternion
 class GraspFromFloor(smach.State, Logger):
     def __init__(self, outcomes):
         smach.State.__init__(self, outcomes=outcomes,
-                            input_keys=['grasp_counter', 'search_locations', 'deposit_locations'])
+                            input_keys=['grasp_counter', 'search_locations', 'deposit_locations', 'detected_obj', 'depth'],
+                            output_keys=['grasp_counter', 'detected_obj'])
         Logger.__init__(self)
 
         self.tamtf = Transform()
@@ -33,8 +34,6 @@ class GraspFromFloor(smach.State, Logger):
         self.srv_grasp = rospy.ServiceProxy("grasp_pose_estimation/service", GraspPoseEstimationService)
         rospy.wait_for_service("grasp_pose_estimation/service", timeout=100)
         
-        
-        
         # Service
         self.srv_detection = rospy.ServiceProxy(
             "hsr_head_rgbd/object_detection/service", ObjectDetectionService
@@ -44,15 +43,20 @@ class GraspFromFloor(smach.State, Logger):
     def grasp_failure(self):
         self.logwarn("Grasp FAILURE")
         userdata.grasp_counter += 1
+        try:
+            # 失敗したらオブジェクトリストから先頭を消す
+            userdata.detected_obj.pop(0)
+        except Exception as e:
+            rospy.loginfo('オブジェクトもうない')
+        if userdata.grasp_counter > 3:
+            # ３回失敗して認識へ
+            userdata.grasp_counter = 0
+            return "nothing"
         return "failure"
 
     def execute(self, userdata):
-        # Declaration module
-       
-            
-        print(1)
-        self.hsrif.gripper.command(1.2)
         
+        self.hsrif.gripper.command(1.2)
         
         self.hsrif.whole_body.move_to_joint_positions(
             {
@@ -67,25 +71,28 @@ class GraspFromFloor(smach.State, Logger):
             sync=True
         )
 
-        # object detection
-        det_req = ObjectDetectionServiceRequest(use_latest_image=True)
-        detections = self.srv_detection(det_req).detections
-        #rospy.logerr(detections)
-        if detections.is_detected is False:
-            return self.grasp_failure()
-        print(2)
+        # # object detection
+        # det_req = ObjectDetectionServiceRequest(use_latest_image=True)
+        # detections = self.srv_detection(det_req).detections
+        # #rospy.logerr(detections)
+        # if detections.is_detected is False:
+        #     return self.grasp_failure()
         i = 0
-        gpe_req = GraspPoseEstimationServiceRequest(
-            depth=detections.depth,
-            mask=detections.segments[i],
-            pose=detections.pose[i],
-            camera_frame_id="head_rgbd_sensor_rgb_frame",
-            frame_id="base_link",
-        )
-        print(gpe_req)
+        try:
+            gpe_req = GraspPoseEstimationServiceRequest(
+                depth=userdata.depth,
+                mask=userdata.detected_obj[i].seg,
+                pose=userdata.detected_obj[i].pose,
+                camera_frame_id="head_rgbd_sensor_rgb_frame",
+                frame_id="base_link",
+            )
+        except Exception as e:
+            userdata.grasp_counter = 0
+            return "nothing"
+        # print(gpe_req)
         gpe_res = self.srv_grasp(gpe_req)
     
-        rospy.loginfo(detections.bbox[i].name)
+        rospy.loginfo(userdata.detected_obj[i].bbox.name)
         rospy.loginfo(gpe_res.grasp.pose)
         
         pose = Pose()

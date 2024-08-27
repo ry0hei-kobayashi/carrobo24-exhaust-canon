@@ -17,7 +17,7 @@ from geometry_msgs.msg import Pose2D
 class GoToFloor(smach.State, Logger):
     def __init__(self, outcomes):
         smach.State.__init__(self, outcomes=outcomes,
-                            input_keys=['search_locations', 'deposit_locations'], output_keys=['search_locations'])
+                            input_keys=['search_locations', 'deposit_locations', 'position'])
         Logger.__init__(self)
 
         self.hsrif = HSRInterfaces()
@@ -40,11 +40,19 @@ class GoToFloor(smach.State, Logger):
             sync=True
         )
         
+        x = userdata.search_locations[userdata.position][0]
+        y = userdata.search_locations[userdata.position][1]
+        yaw = userdata.search_locations[userdata.position][2]
+        
         # set to the goal point
-        goal = Pose2D(1.0, 0.5, np.deg2rad(90.0))
+        goal = Pose2D(x, y, np.deg2rad(yaw))
         
         #call nav function 
         self.nav_module.nav_goal(goal, nav_type="pumas", nav_mode="abs", nav_timeout=0, goal_distance=0) # full definition
 
+        # サーチポジション次の場所へ
+        userdata.position += 1
+        if userdata.position > 5:
+            userdata.position = 0
 
         return "next"
