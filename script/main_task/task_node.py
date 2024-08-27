@@ -43,9 +43,8 @@ class StateMachine:
             'food_tray_b':  (.0, .0, 1.57    ) 
             }
 
-
         self.sm.userdata.locations = None
-        
+
         with self.sm:
             smach.StateMachine.add(
                 "Init",
@@ -73,7 +72,6 @@ class StateMachine:
                     "failure": "GraspFromFloor",
                     "nothing" : "GoToFloor",
                 },
-            )
             smach.StateMachine.add(
                 "DepositObject",
                 deposit.DepositObject(["next", "re_recog"]),
