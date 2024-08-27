@@ -9,6 +9,7 @@ import smach
 import smach_ros
 from hsrlib.hsrif import HSRInterfaces
 from state_machine import (
+    recog,
     deposit,
     goto,
     grasp,
@@ -31,6 +32,11 @@ class StateMachine:
             smach.StateMachine.add(
                 "GoToFloor",
                 goto.GoToFloor(["next"]),
+                transitions={"next": "Recog"},
+            )
+            smach.StateMachine.add(
+                "Recog",
+                recog.Recog(["next"]),
                 transitions={"next": "GraspFromFloor"},
             )
             smach.StateMachine.add(
