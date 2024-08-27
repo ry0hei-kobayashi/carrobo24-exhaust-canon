@@ -1,0 +1,40 @@
+<launch>
+  <!-- Kill Rviz -->
+  <node pkg="compe_pkg" type="kill_rviz_node.py" name="kill_rviz_node" output="screen"/>
+
+  <!-- Object Detection -->
+  <arg name="class_names_path" default="$(find tam_object_detection)/io/config/wrc_ycb_class_names.txt"/>
+  <arg name="weight_path" default="$(find tam_object_detection)/io/models/yolov8-seg_wrc_ycb.engine"/>
+  <arg name="device" default="cuda:0"/>
+  <arg name="confidence_th" default="0.1"/>
+  <arg name="iou_th" default="0.65"/>
+  <arg name="topk" default="30"/>
+
+  <arg name="use_latest_image" default="true"/>
+  <arg name="show_tf" default="false"/>
+  <arg name="max_distance" default="-1"/>
+  <arg name="specific_id" default=""/>
+  <arg name="action_name" default="hsr_head_rgbd/object_detection"/>
+
+  <include file="$(find tam_object_detection)/launch/hsr_head_rgbd_yolov8_trt_service.launch">
+    <arg name="action_name" default="$(arg action_name)"/>
+    <arg name="class_names_path" default="$(arg class_names_path)"/>
+    <arg name="weight_path" default="$(arg weight_path)"/>
+    <arg name="device" default="$(arg device)"/>
+    <arg name="confidence_th" default="$(arg confidence_th)"/>
+    <arg name="iou_th" default="$(arg iou_th)"/>
+    <arg name="topk" default="$(arg topk)"/>
+
+    <arg name="use_latest_image" default="$(arg use_latest_image)"/>
+    <arg name="show_tf" default="$(arg show_tf)"/>
+    <arg name="max_distance" default="$(arg max_distance)"/>
+    <arg name="specific_id" default="$(arg specific_id)"/>
+  </include>
+
+  <!-- task program -->
+  <node pkg="compe_pkg" type="task_node.py" name="compe_task" output="screen"/>
+
+  <!-- Run RViz -->
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find compe_pkg)/rviz/task.rviz"/>
+  
+</launch>

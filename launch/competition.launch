@@ -1,0 +1,83 @@
+<launch>
+    <!-- Simulator -->
+    <include file="$(find hsrb_wrs_gazebo_launch)/launch/include/wrs_common.xml" pass_all_args="true" >
+      <arg name="namespace" default="hsrb"/>
+      <arg name="debug" default="false"/>
+      <arg name="gui" default="true" />
+      <arg name="rviz" default="false"/>
+      <arg name="gazebo_visualization" default="false" />
+      <arg name="use_manipulation" default="true" />
+      <arg name="use_navigation" default="true" />
+      <arg name="use_perception" default="true" />
+      <arg name="use_task" default="true" />
+      <arg name="use_teleop" default="true" />
+      <arg name="use_web" default="true" />
+      <arg name="use_laser_odom" default="true" />
+      <arg name="paused" default="true" />
+      <arg name="fast_physics" default="false" />
+      <arg name="highrtf" default="false" />
+      <arg name="with_handle" default="true" />
+      <arg name="use_oss_stacks" default="false" />
+      <arg name="seed" default="1" />
+      <arg name="camera_controller" default="false" />
+      <arg name="per_category" default="0" />
+      <arg name="obstacles" default="0" />
+      <arg name="per_row" default="0" />
+    </include>
+
+    <!-- Mode Selection Arguments-->
+    <arg name="devel" default="false"/>
+
+    <!-- Argument for Task Time Node (Time Supervisor) -->
+    <arg name="time" default="10.0"/><!-- "10.0[min] -->
+
+    <!-- Arguments of Prepare Task Node -->
+    <arg name="prep" default="true"/>
+    <arg name="seed" default="-1"/>
+    <arg name="percategory" default="5"/>
+    <arg name="obstacles" default="0"/>
+    <arg name="perrow" default="0"/>
+    <arg name="drawer_open" default="true"/>
+    <arg name="drawer_open_time" default="30.0"/><!-- 30.0[s] -->
+    <arg name="delete_prefix" default="task1"/>
+    
+    <!-- If in Development Mode -->
+    <group if="$(arg devel)">
+        <!-- Run Prepare Task Node (Delet Objects & Spawn Objects & Prepare task for the WRS Simulator) -->
+        <node pkg="compe_pkg" type="prepare_task_node.py" name="prepare_task_node" output="screen" required="true">
+            <param name="/prep" type="bool" value="$(arg prep)"/>
+            <param name="/seed" type="int" value="$(arg seed)"/>
+            <param name="/percategory" type="int" value="$(arg percategory)"/>
+            <param name="/obstacles" type="int" value="$(arg obstacles)"/>
+            <param name="/perrow" type="int" value="$(arg perrow)"/>
+            <param name="/drawer_open" type="bool" value="$(arg drawer_open)"/>
+            <param name="/drawer_open_time" type="double" value="$(arg drawer_open_time)"/>
+            <param name="/delete_prefix" type="str" value="$(arg delete_prefix)"/>
+            <param name="/shooting" type="bool" value="false"/>
+        </node>
+    </group>
+    <!-- If in Competition Mode -->
+    <group unless="$(arg devel)">
+        <!-- Run Shooting Node -->
+        <node pkg="compe_pkg" type="shooting_node.py" name="shooting_node" output="screen" required="true"/>
+
+        <!-- Run Manage Task Time Node -->
+        <node pkg="compe_pkg" type="manage_task_time_node.py" name="manage_task_time_node" output="screen" required="true">
+            <param name="/time" type="double" value="$(arg time)"/>
+        </node>
+
+        <!-- Run Prepare Task Node (Delet Objects & Spawn Objects & Prepare task for the WRS Simulator) -->
+        <node pkg="compe_pkg" type="prepare_task_node.py" name="prepare_task_node" output="screen" required="true">
+            <param name="/prep" type="bool" value="true"/>
+            <param name="/seed" type="int" value="$(arg seed)"/>
+            <param name="/percategory" type="int" value="5"/>
+            <param name="/obstacles" type="int" value="0"/>
+            <param name="/perrow" type="int" value="0"/>
+            <param name="/drawer_open" type="bool" value="true"/>
+            <param name="/drawer_open_time" type="double" value="$(arg drawer_open_time)"/>
+            <param name="/delete_prefix" type="str" value="task1"/>
+            <param name="/shooting" type="bool" value="true"/>
+        </node>
+    </group>
+
+</launch>

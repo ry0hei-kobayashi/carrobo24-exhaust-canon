@@ -1,0 +1,8 @@
+<launch>
+    <arg name="data_name" default="None"/>
+    <arg name="video_time" default="10.0"/>
+    <node pkg="compe_pkg" type="make_vido_node.py" name="make_vido_node" output="screen">
+        <param name="data_name" type="str" value="$(arg data_name)"/>
+        <param name="video_time" type="double" value="$(arg video_time)"/>
+    </node>
+</launch>
