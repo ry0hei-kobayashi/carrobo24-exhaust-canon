@@ -8,7 +8,6 @@ import smach
 from geometry_msgs.msg import Pose2D
 from hsrlib.hsrif import HSRInterfaces
 from hsrlib.rosif import ROSInterfaces
-# from hsrnavlib import LibHSRNavigation
 from tamlib.utils import Logger
 
 from navigation_tools.nav_tool_lib import NavModule
@@ -22,7 +21,6 @@ class DepositObject(smach.State, Logger):
 
         self.hsrif = HSRInterfaces()
         self.rosif = ROSInterfaces()
-        #self.navigation = LibHSRNavigation()
         self.nav_module = NavModule("pumas")
         self.category_lsit = {
             "food": [
@@ -127,8 +125,10 @@ class DepositObject(smach.State, Logger):
         yaw=deposit_locations[category][2]
 
         # navigation
-        goal = Pose2D(x, y, np.deg2rad(yaw))
-        self.nav_module.nav_goal(goal, nav_type="pumas", nav_mode="abs", nav_timeout=0, goal_distance=0) # full definition
+        goal = Pose2D(x, y, yaw)
+        #self.nav_module.nav_goal(goal, nav_type="pumas", nav_mode="abs", nav_timeout=0, goal_distance=0) # main branch
+        self.nav_module.nav_goal(goal, nav_type="pumas", nav_mode="abs", nav_timeout=0, goal_distance=0
+                                 angle_correction=True, obstacle_detection=False) # motion_synth
 
         self.hsrif.gripper.command(1.2)
 

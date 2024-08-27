@@ -7,7 +7,6 @@ import rospy
 import smach
 from geometry_msgs.msg import Pose2D
 from hsrlib.hsrif import HSRInterfaces
-# from hsrnavlib import LibHSRNavigation
 from tamlib.utils import Logger
 
 from navigation_tools.nav_tool_lib import NavModule
@@ -16,7 +15,8 @@ from geometry_msgs.msg import Pose2D
 
 class GoToFloor(smach.State, Logger):
     def __init__(self, outcomes):
-        smach.State.__init__(self, outcomes=outcomes,
+    #def __init__(self, outcomes=['next']):
+        smach.State.__init__(self, outcomes,
                             input_keys=['search_locations', 'deposit_locations', 'position'])
         Logger.__init__(self)
 
@@ -26,7 +26,6 @@ class GoToFloor(smach.State, Logger):
         self.nav_module = NavModule("pumas")
 
     def execute(self, userdata):
-        #print(goto1)
         self.hsrif.whole_body.move_to_joint_positions(
             {
                 "arm_lift_joint": 0.0,
@@ -39,16 +38,20 @@ class GoToFloor(smach.State, Logger):
             }, 
             sync=True
         )
+
+        #x,y,yaw = 2.74,-0.17,-1.57
         
         x = userdata.search_locations[userdata.position][0]
         y = userdata.search_locations[userdata.position][1]
-        yaw = userdata.search_locations[userdata.position][2]
+        yaw = userdata.search_locations[userdata.position][2] #誤差radで与える
         
         # set to the goal point
-        goal = Pose2D(x, y, np.deg2rad(yaw))
+        goal = Pose2D(x, y, yaw)
         
         #call nav function 
-        self.nav_module.nav_goal(goal, nav_type="pumas", nav_mode="abs", nav_timeout=0, goal_distance=0) # full definition
+        #self.nav_module.nav_goal(goal, nav_type="pumas", nav_mode="abs", nav_timeout=1, goal_distance=0) # main branch
+        self.nav_module.nav_goal(goal, nav_type="pumas", nav_mode="abs", nav_timeout=0, goal_distance=0, 
+                                 angle_correction=True, obstacle_detection=False) # motion_synth branch 
 
         # サーチポジション次の場所へ
         userdata.position += 1
@@ -56,3 +59,13 @@ class GoToFloor(smach.State, Logger):
             userdata.position = 0
 
         return "next"
+
+if __name__ == "__main__":
+    rospy.init_node('state_machine_nav')
+
+    sm = smach.StateMachine(outcomes='exit')
+    with sm:
+        smach.StateMachine.add('DEBUG', GoToFloor(),
+                               transitions={'next': 'DEBUG'})
+    sm.execute()
+
