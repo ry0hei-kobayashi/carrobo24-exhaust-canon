@@ -29,23 +29,25 @@ class DepositObject(smach.State, Logger):
 
         self.loginfo(category)
 
+        # navigation
+        goal = Pose2D(1.4, 0.0, np.deg2rad(-90.0))
+        self.nav_module.nav_goal(goal, nav_type="pumas", nav_mode="abs", nav_timeout=0, goal_distance=0) # full definition
+
         # goal pose
         self.hsrif.whole_body.move_to_joint_positions(
             {
-                "arm_lift_joint": 0.35,
-                "arm_flex_joint": np.deg2rad(-90.0),
-                "arm_roll_joint": np.deg2rad(0.0),
-                "wrist_flex_joint": np.deg2rad(-90.0),
-                "wrist_roll_joint": np.deg2rad(0.0),
-                "head_pan_joint": 0.0,
-                "head_tilt_joint": 0.0,
+            'arm_lift_joint': 0.2,
+            'arm_flex_joint': -1.0,
+            'arm_roll_joint': 0.0,
+            'wrist_flex_joint': -0.65,
+            'wrist_roll_joint': 0.0,
+            'head_pan_joint': 0.0,
+            'head_tilt_joint': 0.0
             }, 
             sync=True
         )
 
-        # navigation
-        goal = Pose2D(1.4, 0.0, np.deg2rad(-90.0))
-        self.nav_module.nav_goal(goal, nav_type="pumas", nav_mode="abs", nav_timeout=0, goal_distance=0) # full definition
+
 
         self.hsrif.gripper.command(1.2)
 
