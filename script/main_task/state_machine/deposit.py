@@ -16,7 +16,8 @@ from geometry_msgs.msg import Pose2D
 
 class DepositObject(smach.State, Logger):
     def __init__(self, outcomes):
-        smach.State.__init__(self, outcomes=outcomes)
+        smach.State.__init__(self, outcomes=outcomes,
+                            input_keys=['grasp_counter', 'position', 'detected_obj', 'deposit_locations'], output_keys=['grasp_counter', 'position', 'detected_obj'])
         Logger.__init__(self)
 
         self.hsrif = HSRInterfaces()
@@ -56,4 +57,9 @@ class DepositObject(smach.State, Logger):
         )
         self.rosif.pub.command_velocity_in_sec(-0.3, 0, 0, 1)
 
-        return "next"
+        if userdata.grasp_counter < 3:
+            userdata.grasp_counter += 1
+            return "next"
+        else:
+            userdata.grasp_counter = 0:
+            return "re_recog"
