@@ -19,7 +19,8 @@ from geometry_msgs.msg import Pose, Point, Quaternion
 
 class GraspFromFloor(smach.State, Logger):
     def __init__(self, outcomes):
-        smach.State.__init__(self, outcomes=outcomes)
+        smach.State.__init__(self, outcomes=outcomes,
+                            input_keys=['grasp_counter', 'search_locations', 'deposit_locations'])
         Logger.__init__(self)
 
         self.tamtf = Transform()
@@ -42,7 +43,8 @@ class GraspFromFloor(smach.State, Logger):
         
     def grasp_failure(self):
         self.logwarn("Grasp FAILURE")
-        return "next"
+        userdata.grasp_counter += 1
+        return "failure"
 
     def execute(self, userdata):
         # Declaration module

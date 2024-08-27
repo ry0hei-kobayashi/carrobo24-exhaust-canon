@@ -16,7 +16,8 @@ from geometry_msgs.msg import Pose2D
 
 class GoToFloor(smach.State, Logger):
     def __init__(self, outcomes):
-        smach.State.__init__(self, outcomes=outcomes)
+        smach.State.__init__(self, outcomes=outcomes,
+                            input_keys=['search_locations', 'deposit_locations'], output_keys=['search_locations'])
         Logger.__init__(self)
 
         self.hsrif = HSRInterfaces()
