@@ -11,7 +11,7 @@ from hsrlib.hsrif import HSRInterfaces
 from state_machine import (
     deposit,
     goto,
-    grasp,
+    #grasp,
     standard,
 )
 
@@ -22,6 +22,8 @@ class StateMachine:
 
         # ステートマシンの宣言
         self.sm = smach.StateMachine(outcomes=["exit"])
+        self.sm.userdata.a=1
+        self.sm.userdata.list=[]
         with self.sm:
             smach.StateMachine.add(
                 "Init",
@@ -31,16 +33,17 @@ class StateMachine:
             smach.StateMachine.add(
                 "GoToFloor",
                 goto.GoToFloor(["next"]),
-                transitions={"next": "GraspFromFloor"},
+                #transitions={"next": "GraspFromFloor"},
+                transitions={"next": "DepositObject"}
             )
-            smach.StateMachine.add(
-                "GraspFromFloor",
-                grasp.GraspFromFloor(["next", "failure"]),
-                transitions={
-                    "next": "DepositObject",
-                    "failure": "GoToFloor",
-                },
-            )
+            #smach.StateMachine.add(
+            #    "GraspFromFloor",
+            #    grasp.GraspFromFloor(["next", "failure"]),
+            #    transitions={
+            #        "next": "DepositObject",
+            #        "failure": "GoToFloor",
+            #    },
+            #)
             smach.StateMachine.add(
                 "DepositObject",
                 deposit.DepositObject(["next"]),

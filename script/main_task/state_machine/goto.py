@@ -16,7 +16,7 @@ from geometry_msgs.msg import Pose2D
 
 class GoToFloor(smach.State, Logger):
     def __init__(self, outcomes):
-        smach.State.__init__(self, outcomes=outcomes)
+        smach.State.__init__(self, outcomes=outcomes, input_keys=["a", "list"])
         Logger.__init__(self)
 
         self.hsrif = HSRInterfaces()
@@ -25,6 +25,9 @@ class GoToFloor(smach.State, Logger):
         self.nav_module = NavModule("pumas")
 
     def execute(self, userdata):
+        self.loginfo(userdata.a)
+        self.loginfo(userdata.list)
+        self.loginfo("goto")
         self.hsrif.whole_body.move_to_joint_positions(
             {
                 "arm_lift_joint": 0.0,
