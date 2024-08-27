@@ -31,6 +31,14 @@
     <arg name="specific_id" default="$(arg specific_id)"/>
   </include-->
 
+  <!-- Grasp -->
+  <arg name="max_width" default="100.0"/>
+  <arg name="camera_info_topic" default="/hsrb/head_rgbd_sensor/rgb/camera_info"/>
+   <node pkg="tam_grasp" type="vgn_service.py" name="vgn_service" output="screen">
+      <param name="/camera_info_topic" type="str" value="$(arg camera_info_topic)"/>
+      <param name="max_width" type="double" value="$(arg max_width)"/>
+  </node>
+  
   <!-- task program -->
   <node pkg="compe_pkg" type="task_node.py" name="compe_task" output="screen"/>
 
