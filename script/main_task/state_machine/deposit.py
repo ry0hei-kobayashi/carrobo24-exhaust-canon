@@ -44,7 +44,7 @@ class DepositObject(smach.State, Logger):
         )
 
         # navigation
-        goal = Pose2D(2.5, 0.0, np.deg2rad(-90.0))
+        goal = Pose2D(1.4, 0.0, np.deg2rad(-90.0))
         self.nav_module.nav_goal(goal, nav_type="pumas", nav_mode="abs", nav_timeout=0, goal_distance=0) # full definition
 
         self.hsrif.gripper.command(1.2)
