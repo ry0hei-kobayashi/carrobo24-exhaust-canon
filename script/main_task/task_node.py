@@ -31,11 +31,11 @@ class StateMachine:
         self.sm.userdata.position = 0
         self.sm.userdata.search_locations = {
             #key:{x,y,yaw}
-            0: (0.74, 0.70, 1.57  ), #中央 
-            1: (0.54, 0.70,   1.3 ), 
-            2: (0.14, 0.70, 1.57),
-            3: (-0.34, 0.70,     1.57    ),
-            4: (-0.54, 0.70,     1.57    ), #一番手前
+            0: (0.74, 0.65, 1.57  ), #中央 
+            1: (0.54, 0.65,   1.3 ), 
+            2: (0.14, 0.65, 1.57),
+            3: (-0.34, 0.65,     1.57    ),
+            4: (-0.54, 0.65,     1.3   ), #一番手前
             }
         self.sm.userdata.deposit_locations = {
             #key:{x,y,yaw}
@@ -54,11 +54,11 @@ class StateMachine:
         self.sm.userdata.food_select = 1
 
         with self.sm:
-            smach.StateMachine.add(
-                "Init",
-                standard.Init(["next"]),
-                transitions={"next": "GoToFloor"},
-            )
+            #smach.StateMachine.add(
+            #    "Init",
+            #    standard.Init(["next"]),
+            #    transitions={"next": "GoToFloor"},
+            #)
             smach.StateMachine.add(
                 "GoToFloor",
                 goto.GoToFloor(["recog", "grasp"]),

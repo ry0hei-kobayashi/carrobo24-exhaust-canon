@@ -144,7 +144,6 @@ class DepositObject(smach.State, Logger):
 
         # navigation
         goal = Pose2D(x, y, yaw)
-        #self.nav_module.nav_goal(goal, nav_type="pumas", nav_mode="abs", nav_timeout=0, goal_distance=0) # main branch
         self.nav_module.nav_goal(goal, nav_type="pumas", nav_mode="abs", nav_timeout=0, goal_distance=0,
                                  angle_correction=True, obstacle_detection=False) # motion_synth
 
