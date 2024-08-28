@@ -33,9 +33,12 @@ class StateMachine:
             #key:{x,y,yaw}
             0: (0.74, 0.65, 1.57  ), #中央 
             1: (0.54, 0.65,   1.3 ), 
-            2: (0.14, 0.65, 1.57),
-            3: (-0.34, 0.65,     1.57    ),
+            2: (0.74, 0.5, 1.57  ), #中央 
+            3: (0.14, 0.65, 1.57),
             4: (-0.54, 0.65,     1.3   ), #一番手前
+            5: (0.90, 0.4,     1.00   ), #一番手前
+            6: (0.54, 0.5,   1.5 ), 
+            7: (0.54, 0.4,   1.57 ), 
             }
         self.sm.userdata.deposit_locations = {
             #key:{x,y,yaw}
@@ -54,11 +57,11 @@ class StateMachine:
         self.sm.userdata.food_select = 1
 
         with self.sm:
-            #smach.StateMachine.add(
-            #    "Init",
-            #    standard.Init(["next"]),
-            #    transitions={"next": "GoToFloor"},
-            #)
+            smach.StateMachine.add(
+                "Init",
+                standard.Init(["next"]),
+                transitions={"next": "GoToFloor"},
+            )
             smach.StateMachine.add(
                 "GoToFloor",
                 goto.GoToFloor(["recog", "grasp"]),
@@ -78,7 +81,8 @@ class StateMachine:
                 grasp.GraspFromFloor(["next", "failure", "nothing"]),
                 transitions={
                     "next": "DepositObject",
-                    "failure": "GraspFromFloor",
+                    #"failure": "GraspFromFloor",
+                    "failure": "Recog",
                     "nothing" : "GoToFloor",
                 },
             )

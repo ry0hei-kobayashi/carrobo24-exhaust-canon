@@ -144,7 +144,7 @@ class DepositObject(smach.State, Logger):
 
         # navigation
         goal = Pose2D(x, y, yaw)
-        self.nav_module.nav_goal(goal, nav_type="pumas", nav_mode="abs", nav_timeout=0, goal_distance=0,
+        self.nav_module.nav_goal(goal, nav_type="hsr", nav_mode="abs", nav_timeout=0, goal_distance=0,
                                  angle_correction=True, obstacle_detection=False) # motion_synth
 
 
@@ -165,7 +165,7 @@ class DepositObject(smach.State, Logger):
 
         current_joints = self.rosif.sub.get_arm_joint_positions(latest=True)
         self.rosif.pub.arm_command(
-            {"arm_flex_joint": current_joints["arm_flex_joint"] + np.deg2rad(45.0)},
+            {"arm_flex_joint": current_joints["arm_flex_joint"] + np.deg2rad(60.0)},
             time=0.1,
         )
         self.rosif.pub.command_velocity_in_sec(-0.3, 0, 0, 1)

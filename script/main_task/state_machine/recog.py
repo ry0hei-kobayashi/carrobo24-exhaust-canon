@@ -34,7 +34,8 @@ class Recog(smach.State, Logger):
                 #"wrist_roll_joint": np.deg2rad(0.0),
                 #"wrist_flex_joint": np.deg2rad(-110.0),
                 #"head_pan_joint": 0.0,
-                "head_tilt_joint": np.deg2rad(-52.0),
+                #"head_tilt_joint": np.deg2rad(-52.0),
+                "head_tilt_joint": np.deg2rad(-60.0),
             }, 
         )
 
@@ -45,18 +46,18 @@ class Recog(smach.State, Logger):
         #    sync=True
         #)
         rospy.sleep(1)
-        det_req = ObjectDetectionServiceRequest(use_latest_image=True, max_distance=0.9)
+        self.hsrif.gripper.command(0.0)
+        det_req = ObjectDetectionServiceRequest(use_latest_image=True,max_distance=1.0)
         detections = self.srv_detection(det_req).detections
 
         self.loginfo('認識結果')
         self.loginfo(len(detections.bbox))
         if not detections.is_detected:
             userdata.position += 1
-            self.loginfo(detections.bbox)
             self.logwarn("No object detected.")
+            self.hsrif.gripper.command(0.0)
             return "failure"
         
-        userdata.detected_obj = []
 
         min_dist = np.inf
         obj_idx = None
@@ -65,7 +66,7 @@ class Recog(smach.State, Logger):
 
         # Log the detected object information and append to userdata
         rospy.logwarn('recog.-> will find nearness obj')
-        for i in range(len(detections.bbox)):
+        for i, obj_pos in enumerate(detections.pose):
 
             if detections.pose[i].is_valid is False: #can not pose detection
                 rospy.logwarn('recog.-> detection pose is valid')
@@ -76,33 +77,31 @@ class Recog(smach.State, Logger):
                 rospy.logwarn('recog.-> skip difficult obj')
                 continue
 
-            x = detections.pose[i].position.x
-            y = detections.pose[i].position.y
-            z = detections.pose[i].position.z
+            x = obj_pos.position.x
+            y = obj_pos.position.y
+            z = obj_pos.position.z
 
-            dist = np.sqrt(x ** 2 + y ** 2 + z ** 2)
+            dist = np.sqrt(x ** 2 + y ** 2 + z ** 2) #nearness obj
+            if dist < min_dist:
+                min_dist = dist
+                obj_idx = i
 
-            if not (x_min < x_max and y_min < y_max):
-                continue
+            #if not (x_min < x_max and y_min < y_max):
+            #    continue
 
-            userdata.depth = detections.depth
-            userdata.detected_obj.append({
-                "bbox": detections.bbox[i],
-                "pose": detections.pose[i],
-                "seg": detections.segments[i],
-                "distance": dist,
-                })
+        if obj_idx is None:
+            rospy.logwarn('recog.-> cannot find nearness obj.')
+            userdata.position += 1
+            self.hsrif.gripper.command(0.0)
+            return "failure"
 
-
-
-        userdata.detected_obj.sort(key=lambda obj: obj["distance"])
-
-        #if obj_idx is None:
-        #    rospy.logwarn('recog.-> cannot find nearness obj.-> loop'
-        #    #userdata location
-        #    #return "goto"
-
-
+        userdata.depth = detections.depth
+        userdata.detected_obj.append({
+            "bbox": detections.bbox[obj_idx],
+            "pose": detections.pose[obj_idx],
+            "seg": detections.segments[obj_idx],
+            "distance": min_dist,
+        })
 
         for i, obj in enumerate(userdata.detected_obj):
             self.loginfo(f"  label = {obj['bbox'].name}")
@@ -110,5 +109,6 @@ class Recog(smach.State, Logger):
             self.loginfo(f"  Pose: position=({obj['pose'].position.x}, {obj['pose'].position.y}, {obj['pose'].position.z}), orientation=({obj['pose'].orientation.x}, {obj['pose'].orientation.y}, {obj['pose'].orientation.z}, {obj['pose'].orientation.w})")
             self.loginfo(f"  Distance: {obj['distance']}")
 
+        self.hsrif.gripper.command(1.2)
         return "next"
 
