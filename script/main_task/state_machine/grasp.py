@@ -56,6 +56,7 @@ class GraspFromFloor(smach.State, Logger):
         
         self.hsrif.gripper.command(1.2)
         
+
         x = userdata.search_locations[0][0]
         y = userdata.search_locations[0][1]
         yaw = userdata.search_locations[0][2] #誤差radで与える
@@ -66,7 +67,8 @@ class GraspFromFloor(smach.State, Logger):
         #call nav function 
         #self.nav_module.nav_goal(goal, nav_type="pumas", nav_mode="abs", nav_timeout=1, goal_distance=0) # main branch
         self.nav_module.nav_goal(goal, nav_type="pumas", nav_mode="abs", nav_timeout=0, goal_distance=0, 
-                                 angle_correction=False, obstacle_detection=False) # motion_synth branch 
+                                 angle_correction=False, obstacle_detection=False) # motion_synth branch
+        
         i = 0
         try:
             gpe_req = GraspPoseEstimationServiceRequest(
@@ -98,6 +100,23 @@ class GraspFromFloor(smach.State, Logger):
         
         self.hsrif.gripper.apply_force(1.0)
         
+        
+        #if userdata.obj_name in ["030_FORK", "031_SPOON","041_SMALL_MARKER", "026_SPONGE","024_BOWL","040_LARGE_MARKER"]:
+        # m hand_motor_joint
+        hand_joint = self.hsrif.whole_body.joint_positions['hand_motor_joint']
+        rospy.loginfo("------------------------------------")
+        rospy.loginfo('hand_motor_joint:={}'.format(hand_joint))
+        rospy.loginfo("------------------------------------")
+        #error_grasping = False
+        #if (hand_joint > GRASP_THRESHOLD):
+        #    return 'success'
+        """else:
+            error_grasping = True
+            #userdata.objectstf = []
+            omni_base.go_rel(-0.1, 0, 0)
+            return 'drop'
+        """
+        
         axis = (0, 0, -1)
         try:
             self.hsrif.whole_body.move_end_effector_by_line(axis, 0.8, sync=False)
@@ -106,44 +125,5 @@ class GraspFromFloor(smach.State, Logger):
             self.nav_module(pose, nav_type='hsr', nav_mode='rel', nav_timeout=0)
             rospy.logerr("持ち上げエラー")
         print("4,motiage")
-        self.hsrif.gripper.command(1.0)
-        '''
-        idx = 0
-        detection_id = detections.bbox[idx].id
-        label = detections.bbox[idx].name
-        self.loginfo(f"Object: {label}, ID: {detection_id}")
-        print(2)
-        print(detection_id)
-        print(label)
-        # grasp
-        pose = Pose(
-            detections.pose[idx].position,
-            detections.pose[idx].orientation,
-        )
-        grasp_pose = self.tamtf.get_pose_with_offset(
-            "base_link",
-            detections.pose[idx].frame_id,
-            pose,
-            "target",
-        )
-        grasp_pose.position.z += 0.5
-
-        # Reach to object
-        offset_z = 0.2
-        grasp_pose_pre = grasp_pose
-        grasp_pose_pre.position.x -= 0.05
-        grasp_pose_pre.position.z += offset_z
-        res = self.hsrif.whole_body.move_end_effector_pose(
-            grasp_pose_pre,
-            "base_link",
-        )
-        if res is False:
-            return self.grasp_failure()
-
-        self.hsrif.whole_body.move_end_effector_by_line(
-            (0, 0, 1), offset_z, sync=False
-        )
-        self.hsrif.gripper.apply_force(0.5)
-        self.hsrif.whole_body.move_to_neutral()
-        '''
+        
         return "next"

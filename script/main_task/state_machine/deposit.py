@@ -135,17 +135,16 @@ class DepositObject(smach.State, Logger):
 
         userdata.food_select+=1
 
-        self.loginfo(category)
         # goal pose
         self.hsrif.whole_body.move_to_joint_positions(
             {
-                "arm_lift_joint": 0.35,
-                "arm_flex_joint": np.deg2rad(-90.0),
-                "arm_roll_joint": np.deg2rad(0.0),
-                "wrist_flex_joint": np.deg2rad(-90.0),
-                "wrist_roll_joint": np.deg2rad(0.0),
-                "head_pan_joint": 0.0,
-                "head_tilt_joint": 0.0,
+            'arm_lift_joint': 0.2,
+            'arm_flex_joint': -1.0,
+            'arm_roll_joint': 0.0,
+            'wrist_flex_joint': -0.65,
+            'wrist_roll_joint': 0.0,
+            'head_pan_joint': 0.0,
+            'head_tilt_joint': 0.0
             }, 
             sync=True
         )
