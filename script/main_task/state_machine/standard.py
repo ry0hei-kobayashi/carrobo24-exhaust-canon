@@ -24,18 +24,20 @@ class Init(smach.State, Logger):
         self.pub_time_supervisor = rospy.Publisher(
             "/manage_task_time_node/run_enable", Bool, queue_size=1)
 
+        self.loginfo("init")
+
     def execute(self, userdata):
         self.loginfo("init")
 
-        # self.hsrif.whole_body.move_to_neutral()
-        # self.hsrif.gripper.command(0)
+        self.hsrif.whole_body.move_to_neutral()
+        self.hsrif.gripper.command(0)
 
-        # self.pub_open_drawer.publish(Bool(True))
+        self.pub_open_drawer.publish(Bool(True))
         
-        # while True:
-        #     ready = rospy.wait_for_message('/manage_task_time_node/ready', Bool) 
-        #     if ready.data:
-        #         break
+        while True:
+            ready = rospy.wait_for_message('/manage_task_time_node/ready', Bool) 
+            if ready.data:
+                break
         
         input("Start >>> ")
         self.pub_time_supervisor.publish(Bool(True))

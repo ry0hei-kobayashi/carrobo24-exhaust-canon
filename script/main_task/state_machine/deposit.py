@@ -16,7 +16,8 @@ from geometry_msgs.msg import Pose2D
 class DepositObject(smach.State, Logger):
     def __init__(self, outcomes):
         smach.State.__init__(self, outcomes=outcomes,
-                            input_keys=['grasp_counter', 'position', 'detected_obj', 'deposit_locations'], output_keys=['grasp_counter', 'position', 'detected_obj'])
+                            input_keys=['grasp_counter', 'position', 'detected_obj', 'deposit_locations', 'food_select'],
+                            output_keys=['grasp_counter', 'position', 'detected_obj', 'food_select'])
         Logger.__init__(self)
 
         self.hsrif = HSRInterfaces()
@@ -24,6 +25,8 @@ class DepositObject(smach.State, Logger):
         self.nav_module = NavModule("pumas")
         self.category_lsit = {
             "food": [
+                "master_chef_can",
+                "cracker_box",
                 "cheez_it_cracker_box",
                 "domino_sugar_box",
                 "jell_o_chocolate_pudding_box",
@@ -41,7 +44,22 @@ class DepositObject(smach.State, Logger):
                 "plastic_peach",
                 "plastic_pear",
                 "plastic_orange",
-                "plastic_plum"],
+                "plastic_plum",
+                "tomato_soup_can",
+                "mustard_bottle",
+                "tuna_fish_can",
+                "pudding_box",
+                "gelatin_box",
+                "potted_meat_can",
+                "banana",
+                "strawberry",
+                "apple",
+                "lemon",
+                "peach",
+                "pear",
+                "orange",
+                "plum",
+                ],
             "kitchen": [
                 "windex_spray_bottle",
                 "scrub_cleanser_bottle",
@@ -50,15 +68,17 @@ class DepositObject(smach.State, Logger):
                 "pitcher_lid",
                 "plate",
                 "bowl",
-                "fork",
-                "spoon",
                 "spatula",
                 "wine_glass",
-                "mug"],
+                "mug",
+                "bleach_cleanser",
+                "windex_bottle",
+                "sponge"],
             "tool": [
                 "key",
                 "bolt_and_nut",
-                "clamp"],      
+                "clamp",
+                "padlock"],      
             "shape": [
                 "credit_card",
                 "soccer_ball",
@@ -72,7 +92,8 @@ class DepositObject(smach.State, Logger):
                 "foam_brick",
                 "dice",
                 "rope",
-                "chain"],  
+                "chain",
+                "mini_soccer_ball"],  
             "task": [
                 "rubiks_cube",
                 "colored_wood_blocks",
@@ -81,16 +102,24 @@ class DepositObject(smach.State, Logger):
                 "lego_duplo",
                 "magazine",
                 "t_shirt",
-                "timer"],
+                "timer",
+                "toy_airplane_tool",
+                "toy_airplane_parts"],
             "orientation": [
-                "marker"]
+                "large_marker",
+                "spoon",
+                "fork",
+                "small_marker"]
         }
 
     def execute(self, userdata):
-        get_object=userdata.detected_obj[i].bbox.name
+        i=0
+        get_object=userdata.detected_obj[i]['bbox'].name
  
-        if get_object in self.category_lsit["food"]:            
-            category = "food"
+        if get_object in self.category_lsit["food"] and userdata.food_select%2==0:            
+            category = "food1"
+        elif get_object in self.category_lsit["food"] and userdata.food_select%2==1:            
+            category = "food2"
         elif get_object in self.category_lsit["kitchen"]:            
             category = "kitchen"
         elif get_object in self.category_lsit["tool"]:            
@@ -104,8 +133,9 @@ class DepositObject(smach.State, Logger):
         else:
             category = "unknown"
 
-        self.loginfo(category)
+        userdata.food_select+=1
 
+        self.loginfo(category)
         # goal pose
         self.hsrif.whole_body.move_to_joint_positions(
             {
@@ -120,14 +150,14 @@ class DepositObject(smach.State, Logger):
             sync=True
         )
 
-        x=deposit_locations[category][0]
-        y=deposit_locations[category][1]
-        yaw=deposit_locations[category][2]
+        x=userdata.deposit_locations[category][0]
+        y=userdata.deposit_locations[category][1]
+        yaw=userdata.deposit_locations[category][2]
 
         # navigation
         goal = Pose2D(x, y, yaw)
         #self.nav_module.nav_goal(goal, nav_type="pumas", nav_mode="abs", nav_timeout=0, goal_distance=0) # main branch
-        self.nav_module.nav_goal(goal, nav_type="pumas", nav_mode="abs", nav_timeout=0, goal_distance=0
+        self.nav_module.nav_goal(goal, nav_type="pumas", nav_mode="abs", nav_timeout=0, goal_distance=0,
                                  angle_correction=True, obstacle_detection=False) # motion_synth
 
         self.hsrif.gripper.command(1.2)
@@ -139,9 +169,14 @@ class DepositObject(smach.State, Logger):
         )
         self.rosif.pub.command_velocity_in_sec(-0.3, 0, 0, 1)
 
+        if len(userdata.detected_obj)==0:
+            userdata.grasp_counter = 0
+            return "re_recog"
+
         if userdata.grasp_counter < 3:
             userdata.grasp_counter += 1
             userdata.detected_obj.pop(0)
+            rospy.loginfo(len(userdata.detected_obj))
             return "next"
         else:
             userdata.grasp_counter = 0
