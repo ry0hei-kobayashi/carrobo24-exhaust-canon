@@ -25,6 +25,8 @@ class DepositObject(smach.State, Logger):
         self.nav_module = NavModule("pumas")
         self.category_lsit = {
             "food": [
+                "master_chef_can",
+                "cracker_box",
                 "cheez_it_cracker_box",
                 "domino_sugar_box",
                 "jell_o_chocolate_pudding_box",
@@ -42,7 +44,22 @@ class DepositObject(smach.State, Logger):
                 "plastic_peach",
                 "plastic_pear",
                 "plastic_orange",
-                "plastic_plum"],
+                "plastic_plum",
+                "tomato_soup_can",
+                "mustard_bottle",
+                "tuna_fish_can",
+                "pudding_box",
+                "gelatin_box",
+                "potted_meat_can",
+                "banana",
+                "strawberry",
+                "apple",
+                "lemon",
+                "peach",
+                "pear",
+                "orange",
+                "plum",
+                ],
             "kitchen": [
                 "windex_spray_bottle",
                 "scrub_cleanser_bottle",
@@ -51,15 +68,17 @@ class DepositObject(smach.State, Logger):
                 "pitcher_lid",
                 "plate",
                 "bowl",
-                "fork",
-                "spoon",
                 "spatula",
                 "wine_glass",
-                "mug"],
+                "mug",
+                "bleach_cleanser",
+                "windex_bottle",
+                "sponge"],
             "tool": [
                 "key",
                 "bolt_and_nut",
-                "clamp"],      
+                "clamp",
+                "padlock"],      
             "shape": [
                 "credit_card",
                 "soccer_ball",
@@ -73,7 +92,8 @@ class DepositObject(smach.State, Logger):
                 "foam_brick",
                 "dice",
                 "rope",
-                "chain"],  
+                "chain",
+                "mini_soccer_ball"],  
             "task": [
                 "rubiks_cube",
                 "colored_wood_blocks",
@@ -82,9 +102,14 @@ class DepositObject(smach.State, Logger):
                 "lego_duplo",
                 "magazine",
                 "t_shirt",
-                "timer"],
+                "timer",
+                "toy_airplane_tool",
+                "toy_airplane_parts"],
             "orientation": [
-                "marker"]
+                "large_marker",
+                "spoon",
+                "fork",
+                "small_marker"]
         }
 
     def execute(self, userdata):
