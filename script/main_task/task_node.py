@@ -26,24 +26,32 @@ class StateMachine:
         self.sm = smach.StateMachine(outcomes=["exit"])
 
         self.sm.userdata.detected_obj = []
+        self.sm.userdata.depth = None
         self.sm.userdata.grasp_counter = 0
         self.sm.userdata.position = 0
         self.sm.userdata.search_locations = {
             #key:{x,y,yaw}
-            0: (1.0, 2.0, 1.57  ), 
-            1: (2.0, 1.0, -1.57 ), 
-            2: (.0, .0, 1.57    ), 
-            3: (.0, .0, 1.57    ) 
+            0: (0.74, 0.90, 1.57  ), #中央 
+            1: (0.54, 0.90,   1.3 ), 
+            2: (0.14, 0.90, 1.57),
+            3: (-0.34, 0.90,     1.57    ),
+            4: (-0.54, 0.90,     1.57    ), #一番手前
             }
-        self.sm.deposit_locations = {
+        self.sm.userdata.deposit_locations = {
             #key:{x,y,yaw}
-            'kitchen':     (5.0, 5.0, 1.57  ), 
-            'drawer_left': (2.0, 1.0, -1.57 ), 
-            'food_tray_a':  (.0, .0, 1.57    ), 
-            'food_tray_b':  (.0, .0, 1.57    ) 
+            'kitchen':     (0.95, -0.23, -1.57  ), 
+            'tool':        (-0.14, 0.22, -1.57 ),  #right
+            'task':        (2.30, -0.15, -1.57 ), 
+            'food1':       (1.53, -0.20, -1.57    ), #right #TODO 増やして，randomでfoodxを回したい
+            'food2':       (1.66, -0.20, -1.57    ), #left
+            #'food3':       (1.23, -0.20, -1.57    ), #left
+            'shape':       (0.14, 0.22, -1.57    ), #left
+            'orientation': (1.15, -0.20, -1.57    ), 
+            'unknown':     (2.74, -0.15, -1.57    ),
             }
 
-        self.sm.userdata.locations = None
+        # self.sm.userdata.locations = None
+        self.sm.userdata.food_select = 1
 
         with self.sm:
             smach.StateMachine.add(
@@ -58,9 +66,9 @@ class StateMachine:
             )
             smach.StateMachine.add(
                 "Recog",
-                recog.Recog(["success", "failure"]),
+                recog.Recog(["next", "failure"]),
                 transitions={
-                    "success": "GraspFromFloor",
+                    "next": "GraspFromFloor",
                     "failure": "GoToFloor",
                 },
             )
@@ -72,6 +80,7 @@ class StateMachine:
                     "failure": "GraspFromFloor",
                     "nothing" : "GoToFloor",
                 },
+            )
             smach.StateMachine.add(
                 "DepositObject",
                 deposit.DepositObject(["next", "re_recog"]),

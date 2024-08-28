@@ -13,7 +13,7 @@ from tamlib.utils import Logger
 
 class Init(smach.State, Logger):
     def __init__(self, outcomes):
-        smach.State.__init__(self, outcomes=outcomes, input_keys=["a", "list"], output_keys=["a", "list"])
+        smach.State.__init__(self, outcomes=outcomes)
         Logger.__init__(self)
 
         self.hsrif = HSRInterfaces()
@@ -24,22 +24,20 @@ class Init(smach.State, Logger):
         self.pub_time_supervisor = rospy.Publisher(
             "/manage_task_time_node/run_enable", Bool, queue_size=1)
 
-    def execute(self, userdata):
-        self.loginfo(userdata.a)
         self.loginfo("init")
-        userdata.a=2
-        userdata.list.append(['aaa'])
-        userdata.list.append(['bbb'])
 
-        # self.hsrif.whole_body.move_to_neutral()
-        # self.hsrif.gripper.command(0)
+    def execute(self, userdata):
+        self.loginfo("init")
 
-        # self.pub_open_drawer.publish(Bool(True))
+        self.hsrif.whole_body.move_to_neutral()
+        self.hsrif.gripper.command(0)
+
+        self.pub_open_drawer.publish(Bool(True))
         
-        # while True:
-        #     ready = rospy.wait_for_message('/manage_task_time_node/ready', Bool) 
-        #     if ready.data:
-        #         break
+        while True:
+            ready = rospy.wait_for_message('/manage_task_time_node/ready', Bool) 
+            if ready.data:
+                break
         
         input("Start >>> ")
         self.pub_time_supervisor.publish(Bool(True))

@@ -15,12 +15,11 @@ from tam_grasp.srv import GraspPoseEstimationService, GraspPoseEstimationService
 from geometry_msgs.msg import Pose, Point, Quaternion
 
 
-
-
 class GraspFromFloor(smach.State, Logger):
     def __init__(self, outcomes):
         smach.State.__init__(self, outcomes=outcomes,
-                            input_keys=['grasp_counter', 'search_locations', 'deposit_locations'])
+                            input_keys=['grasp_counter', 'search_locations', 'deposit_locations', 'detected_obj', 'depth'],
+                            output_keys=['grasp_counter', 'detected_obj'])
         Logger.__init__(self)
 
         self.tamtf = Transform()
@@ -28,64 +27,65 @@ class GraspFromFloor(smach.State, Logger):
         # self.navigation = LibHSRNavigation()
         self.nav_module = NavModule("pumas")
         
-        srv_detection = rospy.ServiceProxy("hsr_head_rgbd/object_detection/service", ObjectDetectionService)
-        rospy.wait_for_service("hsr_head_rgbd/object_detection/service", timeout=100)
+        # srv_detection = rospy.ServiceProxy("hsr_head_rgbd/object_detection/service", ObjectDetectionService)
+        # rospy.wait_for_service("hsr_head_rgbd/object_detection/service", timeout=100)
         self.srv_grasp = rospy.ServiceProxy("grasp_pose_estimation/service", GraspPoseEstimationService)
         rospy.wait_for_service("grasp_pose_estimation/service", timeout=100)
         
-        
-        
         # Service
-        self.srv_detection = rospy.ServiceProxy(
-            "hsr_head_rgbd/object_detection/service", ObjectDetectionService
-        )
-        self.srv_detection(ObjectDetectionServiceRequest())
+        # self.srv_detection = rospy.ServiceProxy(
+        #     "hsr_head_rgbd/object_detection/service", ObjectDetectionService
+        # )
+        # self.srv_detection(ObjectDetectionServiceRequest())
         
     def grasp_failure(self):
         self.logwarn("Grasp FAILURE")
         userdata.grasp_counter += 1
+        try:
+            # 失敗したらオブジェクトリストから先頭を消す
+            userdata.detected_obj.pop(0)
+        except Exception as e:
+            rospy.loginfo('オブジェクトもうない')
+        if userdata.grasp_counter > 3:
+            # ３回失敗して認識へ
+            userdata.grasp_counter = 0
+            return "nothing"
         return "failure"
 
     def execute(self, userdata):
-        # Declaration module
-       
-            
-        print(1)
+        
         self.hsrif.gripper.command(1.2)
         
-        
-        self.hsrif.whole_body.move_to_joint_positions(
-            {
-                "arm_lift_joint": 0.0,
-                "arm_flex_joint": np.deg2rad(0.0),
-                "arm_roll_joint": np.deg2rad(90.0),
-                "wrist_roll_joint": np.deg2rad(0.0),
-                "wrist_flex_joint": np.deg2rad(-110.0),
-                "head_pan_joint": np.deg2rad(60),
-                "head_tilt_joint": np.deg2rad(-40),
-            }, 
-            sync=True
-        )
 
-        # object detection
-        det_req = ObjectDetectionServiceRequest(use_latest_image=True)
-        detections = self.srv_detection(det_req).detections
-        #rospy.logerr(detections)
-        if detections.is_detected is False:
-            return self.grasp_failure()
-        print(2)
+        x = userdata.search_locations[0][0]
+        y = userdata.search_locations[0][1]
+        yaw = userdata.search_locations[0][2] #誤差radで与える
+        
+        # set to the goal point
+        goal = Pose2D(x, y, yaw)
+        
+        #call nav function 
+        #self.nav_module.nav_goal(goal, nav_type="pumas", nav_mode="abs", nav_timeout=1, goal_distance=0) # main branch
+        self.nav_module.nav_goal(goal, nav_type="pumas", nav_mode="abs", nav_timeout=0, goal_distance=0, 
+                                 angle_correction=False, obstacle_detection=False) # motion_synth branch
+        
         i = 0
-        gpe_req = GraspPoseEstimationServiceRequest(
-            depth=detections.depth,
-            mask=detections.segments[i],
-            pose=detections.pose[i],
-            camera_frame_id="head_rgbd_sensor_rgb_frame",
-            frame_id="base_link",
-        )
-        print(gpe_req)
+        try:
+            gpe_req = GraspPoseEstimationServiceRequest(
+                depth=userdata.depth,
+                mask=userdata.detected_obj[i]['seg'],
+                pose=userdata.detected_obj[i]['pose'],
+                camera_frame_id="head_rgbd_sensor_rgb_frame",
+                frame_id="base_link",
+            )
+        except Exception as e:
+            rospy.logerr(e)
+            userdata.grasp_counter = 0
+            return "nothing"
+        # print(gpe_req)
         gpe_res = self.srv_grasp(gpe_req)
     
-        rospy.loginfo(detections.bbox[i].name)
+        rospy.loginfo(userdata.detected_obj[i]['bbox'].name)
         rospy.loginfo(gpe_res.grasp.pose)
         
         pose = Pose()
@@ -98,49 +98,32 @@ class GraspFromFloor(smach.State, Logger):
         self.hsrif.whole_body.move_end_effector_by_line(axis, 0.01, sync=True)
         print("3,grip")
         
-        self.hsrif.gripper.apply_force(0.8)
+        self.hsrif.gripper.apply_force(1.0)
+        
+        
+        #if userdata.obj_name in ["030_FORK", "031_SPOON","041_SMALL_MARKER", "026_SPONGE","024_BOWL","040_LARGE_MARKER"]:
+        # m hand_motor_joint
+        hand_joint = self.hsrif.whole_body.joint_positions['hand_motor_joint']
+        rospy.loginfo("------------------------------------")
+        rospy.loginfo('hand_motor_joint:={}'.format(hand_joint))
+        rospy.loginfo("------------------------------------")
+        #error_grasping = False
+        #if (hand_joint > GRASP_THRESHOLD):
+        #    return 'success'
+        """else:
+            error_grasping = True
+            #userdata.objectstf = []
+            omni_base.go_rel(-0.1, 0, 0)
+            return 'drop'
+        """
         
         axis = (0, 0, -1)
-        self.hsrif.whole_body.move_end_effector_by_line(axis, 0.8, sync=False)
+        try:
+            self.hsrif.whole_body.move_end_effector_by_line(axis, 0.8, sync=False)
+        except Exception as e:
+            goal = Pose2D(0.0, -0.5, 0.0)
+            self.nav_module(pose, nav_type='hsr', nav_mode='rel', nav_timeout=0)
+            rospy.logerr("持ち上げエラー")
         print("4,motiage")
-        self.hsrif.gripper.command(1.0)
-        '''
-        idx = 0
-        detection_id = detections.bbox[idx].id
-        label = detections.bbox[idx].name
-        self.loginfo(f"Object: {label}, ID: {detection_id}")
-        print(2)
-        print(detection_id)
-        print(label)
-        # grasp
-        pose = Pose(
-            detections.pose[idx].position,
-            detections.pose[idx].orientation,
-        )
-        grasp_pose = self.tamtf.get_pose_with_offset(
-            "base_link",
-            detections.pose[idx].frame_id,
-            pose,
-            "target",
-        )
-        grasp_pose.position.z += 0.5
-
-        # Reach to object
-        offset_z = 0.2
-        grasp_pose_pre = grasp_pose
-        grasp_pose_pre.position.x -= 0.05
-        grasp_pose_pre.position.z += offset_z
-        res = self.hsrif.whole_body.move_end_effector_pose(
-            grasp_pose_pre,
-            "base_link",
-        )
-        if res is False:
-            return self.grasp_failure()
-
-        self.hsrif.whole_body.move_end_effector_by_line(
-            (0, 0, 1), offset_z, sync=False
-        )
-        self.hsrif.gripper.apply_force(0.5)
-        self.hsrif.whole_body.move_to_neutral()
-        '''
+        
         return "next"
