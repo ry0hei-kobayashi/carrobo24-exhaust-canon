@@ -28,7 +28,8 @@ class GoToFloor(smach.State, Logger):
     def execute(self, userdata):
 
         #x,y,yaw = 2.74,-0.17,-1.57
-        
+        if userdata.position > 6:
+                userdata.position = 0
         x = userdata.search_locations[userdata.position][0]
         y = userdata.search_locations[userdata.position][1]
         yaw = userdata.search_locations[userdata.position][2] #誤差radで与える
@@ -52,7 +53,7 @@ class GoToFloor(smach.State, Logger):
         else:
             # サーチポジション次の場所へ
             userdata.position += 1
-            if userdata.position > 5:
+            if userdata.position > 6:
                 userdata.position = 0
             userdata.grasp_counter = 0
             return "recog"

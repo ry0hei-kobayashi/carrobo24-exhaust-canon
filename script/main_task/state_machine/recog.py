@@ -74,7 +74,7 @@ class Recog(smach.State, Logger):
         # self.loginfo("Objects sorted by distance:")
         for i, obj in enumerate(userdata.detected_obj):
             # self.loginfo(f"Object {i}:")
-            # self.loginfo(f"Label: {obj['label']}")
+            self.loginfo(f"Label: {obj['bbox'].name}")
             # bbox = obj['bbox']
             # self.loginfo(f"  Bounding Box: x={bbox.x} y={bbox.y} width={bbox.w} height={bbox.h}")
             pose = obj['pose']
