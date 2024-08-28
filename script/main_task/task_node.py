@@ -12,6 +12,7 @@ from state_machine import (
     recog,
     deposit,
     goto,
+    recog,
     grasp,
     standard,
 )
@@ -23,6 +24,35 @@ class StateMachine:
 
         # ステートマシンの宣言
         self.sm = smach.StateMachine(outcomes=["exit"])
+
+        self.sm.userdata.detected_obj = []
+        self.sm.userdata.depth = None
+        self.sm.userdata.grasp_counter = 0
+        self.sm.userdata.position = 0
+        self.sm.userdata.search_locations = {
+            #key:{x,y,yaw}
+            0: (0.74, 0.90, 1.57  ), #中央 
+            1: (0.54, 0.90,   1.3 ), 
+            2: (0.14, 0.90, 1.57),
+            3: (-0.34, 0.90,     1.57    ),
+            4: (-0.54, 0.90,     1.57    ), #一番手前
+            }
+        self.sm.userdata.deposit_locations = {
+            #key:{x,y,yaw}
+            'kitchen':     (0.95, -0.23, -1.57  ), 
+            'tool':        (-0.14, 0.22, -1.57 ),  #right
+            'task':        (2.30, -0.15, -1.57 ), 
+            'food1':       (1.53, -0.20, -1.57    ), #right #TODO 増やして，randomでfoodxを回したい
+            'food2':       (1.66, -0.20, -1.57    ), #left
+            #'food3':       (1.23, -0.20, -1.57    ), #left
+            'shape':       (0.14, 0.22, -1.57    ), #left
+            'orientation': (1.15, -0.20, -1.57    ), 
+            'unknown':     (2.74, -0.15, -1.57    ),
+            }
+
+        # self.sm.userdata.locations = None
+        self.sm.userdata.food_select = 1
+
         with self.sm:
             smach.StateMachine.add(
                 "Init",
@@ -36,21 +66,28 @@ class StateMachine:
             )
             smach.StateMachine.add(
                 "Recog",
-                recog.Recog(["next"]),
-                transitions={"next": "GraspFromFloor"},
-            )
-            smach.StateMachine.add(
-                "GraspFromFloor",
-                grasp.GraspFromFloor(["next", "failure"]),
+                recog.Recog(["next", "failure"]),
                 transitions={
-                    "next": "DepositObject",
+                    "next": "GraspFromFloor",
                     "failure": "GoToFloor",
                 },
             )
             smach.StateMachine.add(
+                "GraspFromFloor",
+                grasp.GraspFromFloor(["next", "failure", "nothing"]),
+                transitions={
+                    "next": "DepositObject",
+                    "failure": "GraspFromFloor",
+                    "nothing" : "GoToFloor",
+                },
+            )
+            smach.StateMachine.add(
                 "DepositObject",
-                deposit.DepositObject(["next"]),
-                transitions={"next": "GoToFloor", },
+                deposit.DepositObject(["next", "re_recog"]),
+                transitions={
+                    "next": "GraspFromFloor", 
+                    "re_recog": "GoToFloor",
+                },
             )
             smach.StateMachine.add(
                 "Finish",
@@ -83,3 +120,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
