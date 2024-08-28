@@ -96,9 +96,13 @@ class GraspFromFloor(smach.State, Logger):
         self.hsrif.whole_body.move_end_effector_by_line(axis, 0.01, sync=True)
         print("3,grip")
         
-        self.hsrif.gripper.apply_force(1.0)
-        
-        
+        try:
+            self.hsrif.gripper.apply_force(1.0)
+        except Exception as e:
+            #tyotto ue ni agaru
+            self.hsrif.whole_body.move_end_effector_by_line(axis, -0.01,sync=True)
+            self.hsrif.gripper.apply_force(1.0)
+            
         #if userdata.obj_name in ["030_FORK", "031_SPOON","041_SMALL_MARKER", "026_SPONGE","024_BOWL","040_LARGE_MARKER"]:
         # m hand_motor_joint
         hand_joint = self.hsrif.whole_body.joint_positions['hand_motor_joint']
