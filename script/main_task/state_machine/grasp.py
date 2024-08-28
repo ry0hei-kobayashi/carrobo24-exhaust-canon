@@ -38,36 +38,23 @@ class GraspFromFloor(smach.State, Logger):
         # )
         # self.srv_detection(ObjectDetectionServiceRequest())
         
-    def grasp_failure(self):
-        self.logwarn("Grasp FAILURE")
-        userdata.grasp_counter += 1
-        try:
-            # 失敗したらオブジェクトリストから先頭を消す
-            userdata.detected_obj.pop(0)
-        except Exception as e:
-            rospy.loginfo('オブジェクトもうない')
-        if userdata.grasp_counter > 3:
-            # ３回失敗して認識へ
-            userdata.grasp_counter = 0
-            return "nothing"
-        return "failure"
+    # def grasp_failure(self):
+    #     self.logwarn("Grasp FAILURE")
+    #     userdata.grasp_counter += 1
+    #     try:
+    #         # 失敗したらオブジェクトリストから先頭を消す
+    #         userdata.detected_obj.pop(0)
+    #     except Exception as e:
+    #         rospy.loginfo('オブジェクトもうない')
+    #     if userdata.grasp_counter > 3:
+    #         # ３回失敗して認識へ
+    #         userdata.grasp_counter = 0
+    #         return "nothing"
+    #     return "failure"
 
     def execute(self, userdata):
         
         self.hsrif.gripper.command(1.2)
-        
-
-        x = userdata.search_locations[0][0]
-        y = userdata.search_locations[0][1]
-        yaw = userdata.search_locations[0][2] #誤差radで与える
-        
-        # set to the goal point
-        goal = Pose2D(x, y, yaw)
-        
-        #call nav function 
-        #self.nav_module.nav_goal(goal, nav_type="pumas", nav_mode="abs", nav_timeout=1, goal_distance=0) # main branch
-        self.nav_module.nav_goal(goal, nav_type="pumas", nav_mode="abs", nav_timeout=0, goal_distance=0, 
-                                 angle_correction=False, obstacle_detection=False) # motion_synth branch
         
         i = 0
         try:
@@ -84,6 +71,9 @@ class GraspFromFloor(smach.State, Logger):
             return "nothing"
         # print(gpe_req)
         gpe_res = self.srv_grasp(gpe_req)
+        # rospy.logerr(userdata.depth)
+        # rospy.logerr(userdata.detected_obj[i]['seg'])
+        # rospy.logerr(userdata.detected_obj[i]['pose'])
     
         rospy.loginfo(userdata.detected_obj[i]['bbox'].name)
         rospy.loginfo(gpe_res.grasp.pose)

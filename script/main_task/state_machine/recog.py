@@ -8,7 +8,7 @@ import math
 
 class Recog(smach.State, Logger):
     def __init__(self, outcomes):
-        smach.State.__init__(self, outcomes=outcomes, input_keys=["detected_obj", 'position', 'depth'], output_keys=["detected_obj", 'depth'])
+        smach.State.__init__(self, outcomes=outcomes, input_keys=["detected_obj", 'position', 'depth'], output_keys=["detected_obj", 'depth', 'position'])
         Logger.__init__(self)
 
         # Service
@@ -21,7 +21,8 @@ class Recog(smach.State, Logger):
 
     def calculate_euclidean_distance(self, pose):
         # Assuming pose.position is a geometry_msgs/Point-like object with attributes x, y, z
-        return math.sqrt(pose.position.x ** 2 + pose.position.z ** 2)
+        # return math.sqrt(pose.position.x ** 2 + pose.position.z ** 2)
+        return pose.position.z
 
     def execute(self, userdata):
         # Object detection request
@@ -43,6 +44,7 @@ class Recog(smach.State, Logger):
         self.loginfo('認識結果')
         self.loginfo(len(detections.bbox))
         if detections.is_detected is False:
+            userdata.position += 1
             self.loginfo(detections.bbox)
             self.logwarn("No object detected.")
             return "failure"
@@ -63,19 +65,18 @@ class Recog(smach.State, Logger):
                 "pose": detections.pose[i],
                 "seg": detections.segments[i],
                 "distance": distance,
-
             })
 
         # Sort the objects by distance (ascending) in userdata.detected_object
-        userdata.detected_object.sort(key=lambda obj: obj["distance"])
+        userdata.detected_obj.sort(key=lambda obj: obj["distance"])
 
         # Log sorted objects
-        self.loginfo("Objects sorted by distance:")
+        # self.loginfo("Objects sorted by distance:")
         for i, obj in enumerate(userdata.detected_obj):
-            self.loginfo(f"Object {i}:")
-            self.loginfo(f"Label: {obj['label']}")
-            bbox = obj['bbox']
-            self.loginfo(f"  Bounding Box: x={bbox.x} y={bbox.y} width={bbox.w} height={bbox.h}")
+            # self.loginfo(f"Object {i}:")
+            # self.loginfo(f"Label: {obj['label']}")
+            # bbox = obj['bbox']
+            # self.loginfo(f"  Bounding Box: x={bbox.x} y={bbox.y} width={bbox.w} height={bbox.h}")
             pose = obj['pose']
             self.loginfo(f"  Pose: position={pose.position}, orientation={pose.orientation}")
             self.loginfo(f"  Distance: {obj['distance']}")
