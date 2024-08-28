@@ -25,12 +25,12 @@
     <arg name="per_row" value="0" />
   </include>
 
-  <node name='spawn_orange' pkg='gazebo_ros' type='spawn_model' args='-file $(find tmc_wrs_gazebo_worlds)/models/ycb_017_orange/model-1_4.sdf -sdf -model orange -x -0.3 -y 0.2 -z 0.5' />
+  <node name='spawn_orange' pkg='gazebo_ros' type='spawn_model' args='-file $(find hma_hsr_sim_world)/obj/ycb/017_orange/orange.sdf -sdf -model orange -x -0.3 -y 0.2 -z 0.5' />
 
-  <node name='spawn_soccer_ball' pkg='gazebo_ros' type='spawn_model' args='-file $(find tmc_wrs_gazebo_worlds)/models/ycb_053_mini_soccer_ball/model-1_4.sdf -sdf -model soccer -x 2.70 -y -0.8 -z 0.5' />
+  <node name='spawn_soccer_ball' pkg='gazebo_ros' type='spawn_model' args='-file $(find hma_hsr_sim_world)/obj/ycb/053_mini_soccer_ball/mini_soccer_ball.sdf -sdf -model soccer -x 2.70 -y -0.8 -z 0.5' />
 
-  <node name='spawn_baseball' pkg='gazebo_ros' type='spawn_model' args='-file $(find tmc_wrs_gazebo_worlds)/models/ycb_055_baseball/model-1_4.sdf -sdf -model baseball -x 2.70 -y -0.95 -z 0.5' />
+  <node name='spawn_baseball' pkg='gazebo_ros' type='spawn_model' args='-file $(find hma_hsr_sim_world)/obj/ycb/055_baseball/baseball.sdf -sdf -model baseball -x 2.70 -y -0.95 -z 0.5' />
 
-  <node name='spawn_softball' pkg='gazebo_ros' type='spawn_model' args='-file $(find tmc_wrs_gazebo_worlds)/models/ycb_054_softball/model-1_4.sdf -sdf -model softball -x 2.70 -y -1.15 -z 0.5' />
+  <node name='spawn_softball' pkg='gazebo_ros' type='spawn_model' args='-file $(find hma_hsr_sim_world)/obj/ycb/054_softball/softball.sdf -sdf -model softball -x 2.70 -y -1.15 -z 0.5' />
 
 </launch>
