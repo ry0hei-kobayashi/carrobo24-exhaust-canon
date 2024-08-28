@@ -24,6 +24,8 @@ class Init(smach.State, Logger):
         self.pub_time_supervisor = rospy.Publisher(
             "/manage_task_time_node/run_enable", Bool, queue_size=1)
 
+        self.loginfo("init")
+
     def execute(self, userdata):
         self.loginfo("init")
 
