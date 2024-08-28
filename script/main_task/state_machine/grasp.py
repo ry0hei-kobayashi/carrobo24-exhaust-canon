@@ -51,7 +51,7 @@ class GraspFromFloor(smach.State, Logger):
         print(1)
         self.hsrif.gripper.command(1.2)
         
-        
+        """
         self.hsrif.whole_body.move_to_joint_positions(
             {
                 "arm_lift_joint": 0.0,
@@ -63,7 +63,7 @@ class GraspFromFloor(smach.State, Logger):
                 "head_tilt_joint": np.deg2rad(-40),
             }, 
             sync=True
-        )
+        )"""
 
         # object detection
         det_req = ObjectDetectionServiceRequest(use_latest_image=True)
@@ -96,7 +96,7 @@ class GraspFromFloor(smach.State, Logger):
         self.hsrif.whole_body.move_end_effector_by_line(axis, 0.01, sync=True)
         print("3,grip")
         
-        self.hsrif.gripper.apply_force(4.0)
+        self.hsrif.gripper.apply_force(1.0)
         
         
         #if userdata.obj_name in ["030_FORK", "031_SPOON","041_SMALL_MARKER", "026_SPONGE","024_BOWL","040_LARGE_MARKER"]:
