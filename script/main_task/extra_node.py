@@ -10,9 +10,8 @@ import smach_ros
 from hsrlib.hsrif import HSRInterfaces
 from state_machine import (
     sound_recog,
-    goto,
-    grasp,
-    standard,
+    extra_goto,
+    extra_grasp,
 )
 
 
@@ -21,12 +20,16 @@ class StateMachine:
         self.hsrif = HSRInterfaces()
 
         self.sm = smach.StateMachine(outcomes=["exit"])
+        self.sm.userdata.places = {
+            #key:{x,y,yaw}
+            "table": (0.74, 0.9, 1.57  ),
+            "shelf": (0.74, 0.9, 1.57  ),
+            # TODO: table shelf iti
+            # TODO: hito iti
+            }
+        self.sm.userdata.object=""
+        self.sm.userdata.place=""
         with self.sm:
-            # smach.StateMachine.add(
-            #     "Init",
-            #     standard.Init(["next"]),
-            #     transitions={"next": "GoToFloor"},
-            # )
             smach.StateMachine.add(
                 # 音声認識して、掴む場所・物体名を伝える
                 "SoundRecog",
@@ -39,7 +42,7 @@ class StateMachine:
             smach.StateMachine.add(
                 # オブジェクトの場所に
                 "GoObj",
-                grasp.GraspFromFloor(["next", "failure"]),
+                extra_goto.GoToFloor(["next", "failure"]),
                 transitions={
                     "next": "GetObj",
                     "failure": "GoObj",
@@ -48,14 +51,14 @@ class StateMachine:
             smach.StateMachine.add(
                 # オブジェクトを取る
                 "GetObj",
-                deposit.DepositObject(["next"]),
-                transitions={"next": "GoToFloor", },
+                deposit.DepositObject(["next", "loop"]),
+                transitions={"next": "MovePerson", "loop": "GetObj"},
             )
             smach.StateMachine.add(
                 # 人を見つける
                 "MovePerson",
                 deposit.DepositObject(["next"]),
-                transitions={"next": "GoToFloor", },
+                transitions={"next": "exit", },
             )
             smach.StateMachine.add(
                 "Finish",
