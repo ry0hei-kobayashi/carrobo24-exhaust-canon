@@ -134,6 +134,20 @@ class DepositObject(smach.State, Logger):
             category = "unknown"
 
         userdata.food_select+=1
+        rospy.loginfo("物体とカテゴリ")
+        rospy.loginfo(category)
+        rospy.loginfo(get_object)
+
+        x=userdata.deposit_locations[category][0]
+        y=userdata.deposit_locations[category][1]
+        yaw=userdata.deposit_locations[category][2]
+
+        # navigation
+        goal = Pose2D(x, y, yaw)
+        #self.nav_module.nav_goal(goal, nav_type="pumas", nav_mode="abs", nav_timeout=0, goal_distance=0) # main branch
+        self.nav_module.nav_goal(goal, nav_type="pumas", nav_mode="abs", nav_timeout=0, goal_distance=0,
+                                 angle_correction=True, obstacle_detection=False) # motion_synth
+
 
         # goal pose
         self.hsrif.whole_body.move_to_joint_positions(
@@ -148,17 +162,6 @@ class DepositObject(smach.State, Logger):
             }, 
             sync=True
         )
-
-        x=userdata.deposit_locations[category][0]
-        y=userdata.deposit_locations[category][1]
-        yaw=userdata.deposit_locations[category][2]
-
-        # navigation
-        goal = Pose2D(x, y, yaw)
-        #self.nav_module.nav_goal(goal, nav_type="pumas", nav_mode="abs", nav_timeout=0, goal_distance=0) # main branch
-        self.nav_module.nav_goal(goal, nav_type="pumas", nav_mode="abs", nav_timeout=0, goal_distance=0,
-                                 angle_correction=True, obstacle_detection=False) # motion_synth
-
         self.hsrif.gripper.command(1.2)
 
         current_joints = self.rosif.sub.get_arm_joint_positions(latest=True)
@@ -168,15 +171,10 @@ class DepositObject(smach.State, Logger):
         )
         self.rosif.pub.command_velocity_in_sec(-0.3, 0, 0, 1)
 
-        if len(userdata.detected_obj)==0:
-            userdata.grasp_counter = 0
-            return "re_recog"
+        # 配置したら削除
+        userdata.detected_obj.pop(0)
 
-        if userdata.grasp_counter < 3:
-            userdata.grasp_counter += 1
-            userdata.detected_obj.pop(0)
-            rospy.loginfo(len(userdata.detected_obj))
-            return "next"
-        else:
-            userdata.grasp_counter = 0
-            return "re_recog"
+        # 配置したら、把持・配置カウント+１
+        userdata.grasp_counter += 1
+
+        return "next"

@@ -17,7 +17,7 @@ class GoToFloor(smach.State, Logger):
     def __init__(self, outcomes):
     #def __init__(self, outcomes=['next']):
         smach.State.__init__(self, outcomes,
-                            input_keys=['search_locations', 'deposit_locations', 'position'], output_keys=['position'])
+                            input_keys=['search_locations', 'deposit_locations', 'position', 'grasp_counter', 'detected_obj'], output_keys=['position', 'grasp_counter', 'detected_obj'])
         Logger.__init__(self)
 
         # self.hsrif = HSRInterfaces()
@@ -39,14 +39,23 @@ class GoToFloor(smach.State, Logger):
         #call nav function 
         #self.nav_module.nav_goal(goal, nav_type="pumas", nav_mode="abs", nav_timeout=1, goal_distance=0) # main branch
         self.nav_module.nav_goal(goal, nav_type="pumas", nav_mode="abs", nav_timeout=0, goal_distance=0, 
-                                 angle_correction=True, obstacle_detection=False) # motion_synth branch 
+                                 angle_correction=False, obstacle_detection=False) # motion_synth branch 
 
-        # サーチポジション次の場所へ
-        userdata.position += 1
-        if userdata.position > 5:
-            userdata.position = 0
+        if len(userdata.detected_obj)==0:
+            # 見つけられなかったら認識に戻る
+            userdata.grasp_counter = 0
+            return "recog"
 
-        return "next"
+        if userdata.grasp_counter < 3:
+            rospy.loginfo(len(userdata.detected_obj))
+            return "grasp"
+        else:
+            # サーチポジション次の場所へ
+            userdata.position += 1
+            if userdata.position > 5:
+                userdata.position = 0
+            userdata.grasp_counter = 0
+            return "recog"
 
 if __name__ == "__main__":
     rospy.init_node('state_machine_nav')

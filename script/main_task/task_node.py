@@ -31,11 +31,11 @@ class StateMachine:
         self.sm.userdata.position = 0
         self.sm.userdata.search_locations = {
             #key:{x,y,yaw}
-            0: (0.74, 0.90, 1.57  ), #中央 
-            1: (0.54, 0.90,   1.3 ), 
-            2: (0.14, 0.90, 1.57),
-            3: (-0.34, 0.90,     1.57    ),
-            4: (-0.54, 0.90,     1.57    ), #一番手前
+            0: (0.74, 0.70, 1.57  ), #中央 
+            1: (0.54, 0.70,   1.3 ), 
+            2: (0.14, 0.70, 1.57),
+            3: (-0.34, 0.70,     1.57    ),
+            4: (-0.54, 0.70,     1.57    ), #一番手前
             }
         self.sm.userdata.deposit_locations = {
             #key:{x,y,yaw}
@@ -61,8 +61,9 @@ class StateMachine:
             )
             smach.StateMachine.add(
                 "GoToFloor",
-                goto.GoToFloor(["next"]),
-                transitions={"next": "Recog"},
+                goto.GoToFloor(["recog", "grasp"]),
+                transitions={"recog": "Recog",
+                            "grasp": "GraspFromFloor"},
             )
             smach.StateMachine.add(
                 "Recog",
@@ -83,10 +84,9 @@ class StateMachine:
             )
             smach.StateMachine.add(
                 "DepositObject",
-                deposit.DepositObject(["next", "re_recog"]),
+                deposit.DepositObject(["next"]),
                 transitions={
-                    "next": "GraspFromFloor", 
-                    "re_recog": "GoToFloor",
+                    "next": "GoToFloor", 
                 },
             )
             smach.StateMachine.add(
