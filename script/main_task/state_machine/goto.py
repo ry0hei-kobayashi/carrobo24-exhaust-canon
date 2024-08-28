@@ -17,27 +17,15 @@ class GoToFloor(smach.State, Logger):
     def __init__(self, outcomes):
     #def __init__(self, outcomes=['next']):
         smach.State.__init__(self, outcomes,
-                            input_keys=['search_locations', 'deposit_locations', 'position'])
+                            input_keys=['search_locations', 'deposit_locations', 'position'], output_keys=['position'])
         Logger.__init__(self)
 
-        self.hsrif = HSRInterfaces()
+        # self.hsrif = HSRInterfaces()
         
         #call class at only first time
         self.nav_module = NavModule("pumas")
 
     def execute(self, userdata):
-        self.hsrif.whole_body.move_to_joint_positions(
-            {
-                "arm_lift_joint": 0.0,
-                "arm_flex_joint": np.deg2rad(0.0),
-                "arm_roll_joint": np.deg2rad(90.0),
-                "wrist_roll_joint": np.deg2rad(0.0),
-                "wrist_flex_joint": np.deg2rad(-110.0),
-                "head_pan_joint": 0.0,
-                "head_tilt_joint": np.deg2rad(-40),
-            }, 
-            sync=True
-        )
 
         #x,y,yaw = 2.74,-0.17,-1.57
         

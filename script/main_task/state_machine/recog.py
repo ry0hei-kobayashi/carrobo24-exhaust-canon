@@ -2,6 +2,8 @@ import rospy
 import smach
 from tam_object_detection.srv import ObjectDetectionService, ObjectDetectionServiceRequest
 from tamlib.utils import Logger
+from hsrlib.hsrif import HSRInterfaces
+import numpy as np
 
 class Recog(smach.State, Logger):
     def __init__(self, outcomes):
@@ -14,12 +16,29 @@ class Recog(smach.State, Logger):
         )
         rospy.wait_for_service("hsr_head_rgbd/object_detection/service", timeout=1000)
 
+        self.hsrif = HSRInterfaces()
+
     def execute(self, userdata):
         # Object detection request
+        self.hsrif.whole_body.move_to_joint_positions(
+            {
+                "arm_lift_joint": 0.0,
+                "arm_flex_joint": np.deg2rad(0.0),
+                "arm_roll_joint": np.deg2rad(90.0),
+                "wrist_roll_joint": np.deg2rad(0.0),
+                "wrist_flex_joint": np.deg2rad(-110.0),
+                "head_pan_joint": 0.0,
+                "head_tilt_joint": np.deg2rad(-40),
+            }, 
+            sync=True
+        )
         det_req = ObjectDetectionServiceRequest(use_latest_image=True)
         detections = self.srv_detection(det_req).detections
 
+        self.loginfo('認識結果')
+        self.loginfo(len(detections.bbox))
         if detections.is_detected is False:
+            self.loginfo(detections.bbox)
             self.logwarn("No object detected.")
             return "failure"
 

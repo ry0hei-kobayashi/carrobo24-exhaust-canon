@@ -29,16 +29,16 @@ class GraspFromFloor(smach.State, Logger):
         # self.navigation = LibHSRNavigation()
         self.nav_module = NavModule("pumas")
         
-        srv_detection = rospy.ServiceProxy("hsr_head_rgbd/object_detection/service", ObjectDetectionService)
-        rospy.wait_for_service("hsr_head_rgbd/object_detection/service", timeout=100)
+        # srv_detection = rospy.ServiceProxy("hsr_head_rgbd/object_detection/service", ObjectDetectionService)
+        # rospy.wait_for_service("hsr_head_rgbd/object_detection/service", timeout=100)
         self.srv_grasp = rospy.ServiceProxy("grasp_pose_estimation/service", GraspPoseEstimationService)
         rospy.wait_for_service("grasp_pose_estimation/service", timeout=100)
         
         # Service
-        self.srv_detection = rospy.ServiceProxy(
-            "hsr_head_rgbd/object_detection/service", ObjectDetectionService
-        )
-        self.srv_detection(ObjectDetectionServiceRequest())
+        # self.srv_detection = rospy.ServiceProxy(
+        #     "hsr_head_rgbd/object_detection/service", ObjectDetectionService
+        # )
+        # self.srv_detection(ObjectDetectionServiceRequest())
         
     def grasp_failure(self):
         self.logwarn("Grasp FAILURE")
@@ -81,18 +81,19 @@ class GraspFromFloor(smach.State, Logger):
         try:
             gpe_req = GraspPoseEstimationServiceRequest(
                 depth=userdata.depth,
-                mask=userdata.detected_obj[i].seg,
-                pose=userdata.detected_obj[i].pose,
+                mask=userdata.detected_obj[i]['seg'],
+                pose=userdata.detected_obj[i]['pose'],
                 camera_frame_id="head_rgbd_sensor_rgb_frame",
                 frame_id="base_link",
             )
         except Exception as e:
+            rospy.logerr(e)
             userdata.grasp_counter = 0
             return "nothing"
         # print(gpe_req)
         gpe_res = self.srv_grasp(gpe_req)
     
-        rospy.loginfo(userdata.detected_obj[i].bbox.name)
+        rospy.loginfo(userdata.detected_obj[i]['bbox'].name)
         rospy.loginfo(gpe_res.grasp.pose)
         
         pose = Pose()
@@ -108,7 +109,12 @@ class GraspFromFloor(smach.State, Logger):
         self.hsrif.gripper.apply_force(0.8)
         
         axis = (0, 0, -1)
-        self.hsrif.whole_body.move_end_effector_by_line(axis, 0.8, sync=False)
+        try:
+            self.hsrif.whole_body.move_end_effector_by_line(axis, 0.8, sync=False)
+        except Exception as e:
+            goal = Pose2D(0.0, -0.5, 0.0)
+            self.nav_module(pose, nav_type='hsr', nav_mode='rel', nav_timeout=0)
+            rospy.logerr("持ち上げエラー")
         print("4,motiage")
         self.hsrif.gripper.command(1.0)
         '''
