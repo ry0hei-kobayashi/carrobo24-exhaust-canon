@@ -21,8 +21,8 @@ class Recog(smach.State, Logger):
 
     def calculate_euclidean_distance(self, pose):
         # Assuming pose.position is a geometry_msgs/Point-like object with attributes x, y, z
-        # return math.sqrt(pose.position.x ** 2 + pose.position.y ** 2)
-        return pose.position.y
+        # return math.sqrt(pose.position.x ** 2 + pose.position.z ** 2)
+        return pose.position.z
 
     def execute(self, userdata):
         # Object detection request
