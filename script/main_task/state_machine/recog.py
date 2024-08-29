@@ -46,8 +46,9 @@ class Recog(smach.State, Logger):
         #    sync=True
         #)
         rospy.sleep(1)
-        self.hsrif.gripper.command(0.0)
-        det_req = ObjectDetectionServiceRequest(use_latest_image=True,max_distance=1.0)
+        self.hsrif.gripper.apply_force(1.0)
+
+        det_req = ObjectDetectionServiceRequest(use_latest_image=True,max_distance=1.0) #1.0
         detections = self.srv_detection(det_req).detections
 
         self.loginfo('認識結果')
@@ -73,9 +74,9 @@ class Recog(smach.State, Logger):
                 continue
 
             label = detections.bbox[i].name
-            if label == 'toy_airplane': #retire difficult obj
-                rospy.logwarn('recog.-> skip difficult obj')
-                continue
+            #if label == 'toy_airplane': #retire difficult obj
+            #    rospy.logwarn('recog.-> skip difficult obj')
+            #    continue
 
             x = obj_pos.position.x
             y = obj_pos.position.y

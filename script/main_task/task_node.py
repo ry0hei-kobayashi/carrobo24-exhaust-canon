@@ -114,6 +114,8 @@ def main():
     rospy.init_node(os.path.basename(__file__).split(".")[0])
 
     cls = StateMachine()
+
+
     rospy.on_shutdown(cls.delete)
     try:
         cls.run()

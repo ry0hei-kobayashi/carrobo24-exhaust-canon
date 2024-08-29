@@ -129,7 +129,8 @@ class DepositObject(smach.State, Logger):
         elif get_object in self.category_lsit["task"]:            
             category = "task"
         elif get_object in self.category_lsit["orientation"]:            
-            category = "orientation"
+            category = "task"
+            #category = "orientation"
         else:
             category = "unknown"
 
@@ -144,18 +145,16 @@ class DepositObject(smach.State, Logger):
 
         # navigation
         goal = Pose2D(x, y, yaw)
-        self.nav_module.nav_goal(goal, nav_type="hsr", nav_mode="abs", nav_timeout=0, goal_distance=0,
+        self.nav_module.nav_goal(goal, nav_type="pumas", nav_mode="abs", nav_timeout=0, goal_distance=0,
                                  angle_correction=True, obstacle_detection=False) # motion_synth
 
 
         # goal pose
         self.hsrif.whole_body.move_to_joint_positions(
             {
-            'arm_lift_joint': 0.2,
-            'arm_flex_joint': -1.0,
+            'arm_lift_joint': 0.35,
+            'arm_flex_joint': -0.5,
             'arm_roll_joint': 0.0,
-            'wrist_flex_joint': -0.65,
-            'wrist_roll_joint': 0.0,
             'head_pan_joint': 0.0,
             'head_tilt_joint': 0.0
             }, 
@@ -168,7 +167,6 @@ class DepositObject(smach.State, Logger):
             {"arm_flex_joint": current_joints["arm_flex_joint"] + np.deg2rad(60.0)},
             time=0.1,
         )
-        self.rosif.pub.command_velocity_in_sec(-0.3, 0, 0, 1)
 
         # 配置したら削除
         userdata.detected_obj.pop(0)

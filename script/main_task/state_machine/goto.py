@@ -40,7 +40,7 @@ class GoToFloor(smach.State, Logger):
         
         #call nav function 
         #self.nav_module.nav_goal(goal, nav_type="pumas", nav_mode="abs", nav_timeout=1, goal_distance=0) # main branch
-        self.nav_module.nav_goal(goal, nav_type="pumas", nav_mode="abs", nav_timeout=0, goal_distance=0, 
+        self.nav_module.nav_goal(goal, nav_type="hsr", nav_mode="abs", nav_timeout=0, goal_distance=0, 
                                  angle_correction=False, obstacle_detection=False) # motion_synth branch 
 
         if len(userdata.detected_obj)==0:

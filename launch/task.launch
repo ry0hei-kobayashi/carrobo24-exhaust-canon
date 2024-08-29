@@ -34,7 +34,7 @@
   <!-- Grasp -->
   <arg name="max_width" default="100.0"/>
   <arg name="camera_info_topic" default="/hsrb/head_rgbd_sensor/rgb/camera_info"/>
-   <node pkg="tam_grasp" type="vgn_service.py" name="vgn_service" output="screen">
+   <node pkg="tam_grasp" type="vgn_service.py" name="vgn_service" output="screen" respawn="true">
       <param name="/camera_info_topic" type="str" value="$(arg camera_info_topic)"/>
       <param name="max_width" type="double" value="$(arg max_width)"/>
   </node>
