@@ -236,6 +236,9 @@ class GraspFromFloor(smach.State, Logger):
         rospy.loginfo("------------------------------------")
         rospy.loginfo('hand_motor_joint:={}'.format(hand_joint))
         rospy.loginfo("------------------------------------")
+
+        goal = Pose2D(0.15, 0.0, 0.0)
+        self.nav_module(pose, nav_type='hsr', nav_mode='rel', nav_timeout=0)
  
 
         if (hand_joint > GRASP_THRESHOLD):

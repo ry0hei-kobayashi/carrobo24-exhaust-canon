@@ -26,17 +26,12 @@ class Recog(smach.State, Logger):
 
     def execute(self, userdata):
         # Object detection request
+        self.hsrif.gripper.apply_force(1.0)
         self.hsrif.whole_body.move_to_joint_positions(
             {
-                #"arm_lift_joint": 0.0,
-                #"arm_flex_joint": np.deg2rad(0.0),
-                #"arm_roll_joint": np.deg2rad(90.0),
-                #"wrist_roll_joint": np.deg2rad(0.0),
-                #"wrist_flex_joint": np.deg2rad(-110.0),
-                #"head_pan_joint": 0.0,
-                #"head_tilt_joint": np.deg2rad(-52.0),
                 "head_tilt_joint": np.deg2rad(-60.0),
             }, 
+            sync=True
         )
 
         #self.hsrif.whole_body.move_to_joint_positions(
@@ -45,10 +40,8 @@ class Recog(smach.State, Logger):
         #    }(,( 
         #    sync=True
         #)
-        rospy.sleep(1)
-        self.hsrif.gripper.apply_force(1.0)
 
-        det_req = ObjectDetectionServiceRequest(use_latest_image=True,max_distance=1.0) #1.0
+        det_req = ObjectDetectionServiceRequest(use_latest_image=True) #,max_distance=1.0) #1.0
         detections = self.srv_detection(det_req).detections
 
         self.loginfo('認識結果')
@@ -69,8 +62,7 @@ class Recog(smach.State, Logger):
         rospy.logwarn('recog.-> will find nearness obj')
         for i, obj_pos in enumerate(detections.pose):
 
-            if detections.pose[i].is_valid is False: #can not pose detection
-                rospy.logwarn('recog.-> detection pose is valid')
+            if detections.pose[i].is_valid is False: #can not pose detection rospy.logwarn('recog.-> detection pose is valid')
                 continue
 
             label = detections.bbox[i].name

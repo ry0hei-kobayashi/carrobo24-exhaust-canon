@@ -153,7 +153,7 @@ class DepositObject(smach.State, Logger):
         self.hsrif.whole_body.move_to_joint_positions(
             {
             'arm_lift_joint': 0.35,
-            'arm_flex_joint': -0.5,
+            'arm_flex_joint': -1.0,
             'arm_roll_joint': 0.0,
             'head_pan_joint': 0.0,
             'head_tilt_joint': 0.0
