@@ -20,7 +20,7 @@ class Voice_recog(smach.State, Logger):
         self.file_name =  '/home/carrobo2024/ros_ws/src/compe_pkg/io/audio/shell_orange_sato.wav'
 
         # APIキーの設定
-        openai.api_key =  # ここにあなたのAPIキーを入力
+        openai.api_key = "" # ここにあなたのAPIキーを入力
 
     def execute(self, userdata):
         print("sound")
@@ -40,7 +40,7 @@ class Voice_recog(smach.State, Logger):
 
 
         # プロンプトの設定
-        prompt = f"次の文からオブジェクト名と置いてある家具名を英語で抽出してください。:{result['text']}出力形式は、'オブジェクト名:[オブジェクト名を英語で出力], 場所:[家具名を英語で出力]'。"
+        prompt = f"次の文からオブジェクト名と置いてある家具名、人の名前を英語で抽出してください。:{result['text']}出力形式は、'オブジェクト名:[オブジェクト名を英語で出力], 場所:[家具名を英語で出力], 人の名前:[人の名前を英語で出力]'。"
 
         # 正しいモデル名を使用して応答を生成
         response = openai.ChatCompletion.create(
@@ -49,7 +49,7 @@ class Voice_recog(smach.State, Logger):
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": prompt}
             ],
-            temperature=0.7
+            temperature=0.0
         )
 
         text = response['choices'][0]['message']['content'].strip()
@@ -60,6 +60,8 @@ class Voice_recog(smach.State, Logger):
 
         # 「場所:」に続く部分を取り出す
         location_match = re.search(r'場所:(.*?)(,|$)', text)
+
+        person_match = re.search(r'人の名前:(.*?)(,|$)', text)
         if object_match:
             userdata.object = object_match.group(1).strip()
             rospy.loginfo(userdata.object)

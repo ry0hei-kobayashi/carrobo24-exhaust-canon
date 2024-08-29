@@ -24,19 +24,21 @@ class StateMachine:
         self.sm.userdata.places = {
             #key:{x,y,yaw}
             "table": (0.74, 0.9, 1.57  ),
-            "shelf": (2.11, 4.2, 1.57  ),
-            "person": (0.0918, 2.9, 0  ),
+            "shelf": (2.11, 3.9, 1.57  ),
+            "person": (0.0918, 2.9, 2.9  ),
             # TODO: table shelf iti
             # TODO: hito iti
             }
         self.sm.userdata.object=""
         self.sm.userdata.place=""
+        # self.sm.userdata.object="orange"
+        # self.sm.userdata.place="table"
         with self.sm:
-            smach.StateMachine.add(
-                "Init",
-                standard.Init(["next"]),
-                transitions={"next": "SoundRecog"},
-            )
+            # smach.StateMachine.add(
+            #     "Init",
+            #     standard.Init(["next"]),
+            #     transitions={"next": "SoundRecog"},
+            # )
             smach.StateMachine.add(
                 # 音声認識して、掴む場所・物体名を伝える
                 "SoundRecog",
@@ -58,8 +60,8 @@ class StateMachine:
             smach.StateMachine.add(
                 # オブジェクトを取る
                 "GetObj",
-                extra_grasp.GraspFromFloor(["next", "loop"]),
-                transitions={"next": "MovePerson", "loop": "GetObj"},
+                extra_grasp.GraspFromFloor(["next", "search"]),
+                transitions={"next": "MovePerson", "search": "GoObj"},
             )
             smach.StateMachine.add(
                 # 人を見つける
