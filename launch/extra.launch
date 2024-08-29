@@ -3,7 +3,7 @@
   <node pkg="compe_pkg" type="kill_rviz_node.py" name="kill_rviz_node" output="screen"/>
 
   <!-- Object Detection -->
-  <!--arg name="class_names_path" default="$(find tam_object_detection)/io/config/wrc_ycb_class_names.txt"/>
+  <arg name="class_names_path" default="$(find tam_object_detection)/io/config/wrc_ycb_class_names.txt"/>
   <arg name="weight_path" default="$(find tam_object_detection)/io/models/yolov8-seg_wrc_ycb.engine"/>
   <arg name="device" default="cuda:0"/>
   <arg name="confidence_th" default="0.1"/>
@@ -14,9 +14,9 @@
   <arg name="show_tf" default="false"/>
   <arg name="max_distance" default="-1"/>
   <arg name="specific_id" default=""/>
-  <arg name="action_name" default="hsr_head_rgbd/object_detection"/-->
+  <arg name="action_name" default="hsr_head_rgbd/object_detection"/>
 
-  <!--include file="$(find tam_object_detection)/launch/hsr_head_rgbd_yolov8_trt_service.launch">
+  <include file="$(find tam_object_detection)/launch/hsr_head_rgbd_yolov8_trt_service.launch">
     <arg name="action_name" default="$(arg action_name)"/>
     <arg name="class_names_path" default="$(arg class_names_path)"/>
     <arg name="weight_path" default="$(arg weight_path)"/>
@@ -29,8 +29,16 @@
     <arg name="show_tf" default="$(arg show_tf)"/>
     <arg name="max_distance" default="$(arg max_distance)"/>
     <arg name="specific_id" default="$(arg specific_id)"/>
-  </include-->
+  </include>
 
+  <!-- Grasp -->
+  <arg name="max_width" default="100.0"/>
+  <arg name="camera_info_topic" default="/hsrb/head_rgbd_sensor/rgb/camera_info"/>
+   <node pkg="tam_grasp" type="vgn_service.py" name="vgn_service" output="screen">
+      <param name="/camera_info_topic" type="str" value="$(arg camera_info_topic)"/>
+      <param name="max_width" type="double" value="$(arg max_width)"/>
+  </node>
+  
   <!-- task program -->
   <node pkg="compe_pkg" type="extra_node.py" name="compe_task" output="screen"/>
 

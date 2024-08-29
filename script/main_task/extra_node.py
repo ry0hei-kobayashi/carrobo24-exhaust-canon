@@ -9,9 +9,10 @@ import smach
 import smach_ros
 from hsrlib.hsrif import HSRInterfaces
 from state_machine import (
-    sound_recog,
+    sound,
     extra_goto,
     extra_grasp,
+    standard,
 )
 
 
@@ -23,7 +24,8 @@ class StateMachine:
         self.sm.userdata.places = {
             #key:{x,y,yaw}
             "table": (0.74, 0.9, 1.57  ),
-            "shelf": (0.74, 0.9, 1.57  ),
+            "shelf": (2.11, 4.2, 1.57  ),
+            "person": (0.0918, 2.9, 0  ),
             # TODO: table shelf iti
             # TODO: hito iti
             }
@@ -31,9 +33,14 @@ class StateMachine:
         self.sm.userdata.place=""
         with self.sm:
             smach.StateMachine.add(
+                "Init",
+                standard.Init(["next"]),
+                transitions={"next": "SoundRecog"},
+            )
+            smach.StateMachine.add(
                 # 音声認識して、掴む場所・物体名を伝える
                 "SoundRecog",
-                sound_recog.LibSpeechRecog(["next", "loop"]),
+                sound.Voice_recog(["next", "loop"]),
                 transitions={
                     "next": "GoObj",
                     "loop": "SoundRecog",
@@ -51,20 +58,20 @@ class StateMachine:
             smach.StateMachine.add(
                 # オブジェクトを取る
                 "GetObj",
-                deposit.DepositObject(["next", "loop"]),
+                extra_grasp.GraspFromFloor(["next", "loop"]),
                 transitions={"next": "MovePerson", "loop": "GetObj"},
             )
             smach.StateMachine.add(
                 # 人を見つける
                 "MovePerson",
-                deposit.DepositObject(["next"]),
+                extra_goto.GoToFloor(["next"]),
                 transitions={"next": "exit", },
             )
-            smach.StateMachine.add(
-                "Finish",
-                standard.Finish(["finish"]),
-                transitions={"finish": "exit"},
-            )
+            # smach.StateMachine.add(
+            #     "Finish",
+            #     standard.Finish(["finish"]),
+            #     transitions={"finish": "exit"},
+            # )
         rospy.loginfo("sm add end")
 
         sris = smach_ros.IntrospectionServer("sm", self.sm, "/SM_ROOT")

@@ -27,17 +27,6 @@ class GraspFromFloor(smach.State, Logger):
         # self.navigation = LibHSRNavigation()
         self.nav_module = NavModule("pumas")
         
-        # srv_detection = rospy.ServiceProxy("hsr_head_rgbd/object_detection/service", ObjectDetectionService)
-        # rospy.wait_for_service("hsr_head_rgbd/object_detection/service", timeout=100)
-        self.srv_grasp = rospy.ServiceProxy("grasp_pose_estimation/service", GraspPoseEstimationService)
-        rospy.wait_for_service("grasp_pose_estimation/service", timeout=100)
-        
-        # Service
-        self.srv_detection = rospy.ServiceProxy(
-            "hsr_head_rgbd/object_detection/service", ObjectDetectionService
-        )
-        self.srv_detection(ObjectDetectionServiceRequest())
-        
     # def grasp_failure(self):
     #     self.logwarn("Grasp FAILURE")
     #     userdata.grasp_counter += 1
@@ -53,7 +42,18 @@ class GraspFromFloor(smach.State, Logger):
     #     return "failure"
 
     def execute(self, userdata):
+
+        # srv_detection = rospy.ServiceProxy("hsr_head_rgbd/object_detection/service", ObjectDetectionService)
+        # rospy.wait_for_service("hsr_head_rgbd/object_detection/service", timeout=100)
+        self.srv_grasp = rospy.ServiceProxy("grasp_pose_estimation/service", GraspPoseEstimationService)
+        rospy.wait_for_service("grasp_pose_estimation/service", timeout=100)
         
+        # Service
+        self.srv_detection = rospy.ServiceProxy(
+            "hsr_head_rgbd/object_detection/service", ObjectDetectionService
+        )
+        self.srv_detection(ObjectDetectionServiceRequest())
+
         self.hsrif.gripper.command(1.2)
         
         self.hsrif.whole_body.move_to_joint_positions(
@@ -128,5 +128,7 @@ class GraspFromFloor(smach.State, Logger):
             self.nav_module(pose, nav_type='hsr', nav_mode='rel', nav_timeout=0)
             rospy.logerr("持ち上げエラー")
         print("4,motiage")
+
+        userdata.place="person"
         
         return "next"
