@@ -33,12 +33,12 @@
 
     <!-- Arguments of Prepare Task Node -->
     <arg name="prep" default="true"/>
-    <arg name="seed" default="-1"/>
+    <arg name="seed" default="1520"/>
     <arg name="percategory" default="5"/>
     <arg name="obstacles" default="0"/>
     <arg name="perrow" default="0"/>
     <arg name="drawer_open" default="true"/>
-    <arg name="drawer_open_time" default="30.0"/><!-- 30.0[s] -->
+    <arg name="drawer_open_time" default="15.0"/><!-- 30.0[s] -->
     <arg name="delete_prefix" default="task1"/>
     
     <!-- If in Development Mode -->

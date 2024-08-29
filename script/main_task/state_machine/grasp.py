@@ -13,8 +13,9 @@ from navigation_tools.nav_tool_lib import NavModule
 from geometry_msgs.msg import Pose2D, WrenchStamped
 from tam_grasp.srv import GraspPoseEstimationService, GraspPoseEstimationServiceRequest
 from geometry_msgs.msg import Pose, Point, Quaternion
-#from hsrb_interface.exceptions import *
-#from . import action_robot
+from hsrb_interface.exceptions import *
+import hsrb_interface
+from . import action_robot
 
 GRASP_THRESHOLD = -0.85
 
@@ -32,13 +33,13 @@ class GraspFromFloor(smach.State, Logger):
         self.nav_module = NavModule("pumas")
         self.srv_grasp = rospy.ServiceProxy("grasp_pose_estimation/service", GraspPoseEstimationService)
 
-        #self.a_robot = action_robot.RobotWithAction()
+        self.a_robot = action_robot.RobotWithAction()
         rospy.wait_for_service("grasp_pose_estimation/service", timeout=100)
 
         #wrench
         #self.a_robot = action_robot.RobotWithAction()
-        #self.threshold = -28.0
-        #self.current_val = None
+        self.threshold = -28.0
+        self.current_val = None
 
  
     #def grasp_check(self, hand_motor_joint_before:float) -> bool:
@@ -54,33 +55,34 @@ class GraspFromFloor(smach.State, Logger):
     #    else:
     #        return False
 
-    #def wrench_cb(self, msg):
-    #    try:
-    #        self.current_value = msg.wrench.force.z  # TODO
-    #        if self.current_value > self.threshold:
-    #            self.a_robot.cancel_arm()
-    #            self.pushed = True
-    #            return
-    #    except:
-    #        rospy.logerr("for traceback")
-    #        import traceback
-    #        traceback.print_exc()
-    #
-    #def wrench_gripper_cb(self, msg):
-    #    try:
-    #        self.current_value = msg.wrench.force.z  # TODO
-    #        if self.current_value > self.threshold_for_gripper:
-    #            self.pushed_for_gripper = True
-    #            self.a_robot.applyforce_client.cancel_goal()
-    #    except:
-    #        rospy.logerr("for traceback")
-    #        import traceback
-    #        traceback.print_exc()
+    def wrench_cb(self, msg):
+        try:
+            self.current_value = msg.wrench.force.z  # TODO
+            if self.current_value > self.threshold:
+                self.a_robot.cancel_arm()
+                self.pushed = True
+                return
+        except:
+            rospy.logerr("for traceback")
+            import traceback
+            traceback.print_exc()
+    
+    def wrench_gripper_cb(self, msg):
+        try:
+            self.current_value = msg.wrench.force.z  # TODO
+            if self.current_value > self.threshold_for_gripper:
+                self.pushed_for_gripper = True
+                self.a_robot.applyforce_client.cancel_goal()
+        except:
+            rospy.logerr("for traceback")
+            import traceback
+            traceback.print_exc()
     
         
 
     def execute(self, userdata):
         self.hsrif.gripper.command(1.2)
+        
         
         i = 0
         try:
@@ -109,8 +111,8 @@ class GraspFromFloor(smach.State, Logger):
             'grasp'
         )
 
-        self.hsrif.whole_body.linear_weight = 1
-        self.hsrif.whole_body.angular_weight = 100
+        #self.hsrif.whole_body.linear_weight = 1
+        #self.hsrif.whole_body.angular_weight = 100
         #self.hsrif.whole_body.joint_weights = {
         #    "arm_lift_joint": 1.0,
         #    "arm_flex_joint": 100.0,
@@ -188,19 +190,19 @@ class GraspFromFloor(smach.State, Logger):
         #except:
         #    self.hsrif.whole_body.move_end_effector_pose(geometry.pose(z=0.03), "task")
 
-        ##gripper force
-        #self.pushed_for_gripper = False
-        #with TemporarySubscriber('/hsrb/wrist_wrench/raw', WrenchStamped, self.wrench_cb):
-        #    rate = rospy.Rate(100)
-        #    rospy.logwarn('grasp.-> gripper contact')
-        #    gripper_val = 0
-        #    while not rospy.is_shutdown() and not self.pushed_for_gripper:
-        #        hand_motor_joint = self.hsrif.whole_body.joint_positions['hand_motor_joint']
-        #        self.a_robot.gripper_applyforce(1.0)
-        #        if hand_motor_joint < 1:
-        #            break
-        #        rate.sleep()
-        #    self.a_robot.apply_force_client.cancel_goal()
+        #gripper force
+        self.pushed_for_gripper = False
+        with TemporarySubscriber('/hsrb/wrist_wrench/raw', WrenchStamped, self.wrench_cb):
+            rate = rospy.Rate(100)
+            rospy.logwarn('grasp.-> gripper contact')
+            gripper_val = 0
+            while not rospy.is_shutdown() and not self.pushed_for_gripper:
+                hand_motor_joint = self.hsrif.whole_body.joint_positions['hand_motor_joint']
+                self.a_robot.gripper_applyforce(1.0)
+                if hand_motor_joint < 1:
+                    break
+                rate.sleep()
+            self.a_robot.apply_force_client.cancel_goal()
         
 
 
@@ -220,8 +222,7 @@ class GraspFromFloor(smach.State, Logger):
             #self.hsrif.whole_body.move_end_effector_by_line(axis, 0.5, sync=False)
         except Exception as e:
             rospy.logerr("grasp.-> lifting obj error")
-            goal = Pose2D(0.15, 0.0, 0.0)
-            self.nav_module(pose, nav_type='hsr', nav_mode='rel', nav_timeout=0)
+
             self.hsrif.whole_body.move_to_joint_positions({'arm_lift_ojoint': 0.2,
                                                            'arm_flex_joint': -0.5,
                                                            'arm_roll_joint': 0.0,
@@ -229,6 +230,10 @@ class GraspFromFloor(smach.State, Logger):
                                                            'wrist_roll_joint': 0.00,})
             #self.hsrif.whole_body.move_end_effector_by_line(axis, 0.45, sync=False)
 
+            #self.nav_module(pose, nav_type='hsr', nav_mode='rel')
+
+            goal = Pose2D(0.15, 0.0, 0.0)                      
+            self.nav_module(goal, nav_type="hsr", nav_mode="rel", nav_timeout=0, goal_distance=0, angle_correction=False, obstacle_detection=False)
 
 
         # m hand_motor_joint
@@ -237,8 +242,11 @@ class GraspFromFloor(smach.State, Logger):
         rospy.loginfo('hand_motor_joint:={}'.format(hand_joint))
         rospy.loginfo("------------------------------------")
 
-        goal = Pose2D(0.15, 0.0, 0.0)
-        self.nav_module(pose, nav_type='hsr', nav_mode='rel', nav_timeout=0)
+        try:
+            goal = Pose2D(0.15, 0.0, 0.0)                      
+            self.nav_module(goal, nav_type="hsr", nav_mode="rel", nav_timeout=0, goal_distance=0, angle_correction=False, obstacle_detection=False)
+        except:
+            pass
  
 
         if (hand_joint > GRASP_THRESHOLD):
