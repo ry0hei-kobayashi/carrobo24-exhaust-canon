@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 
@@ -28,6 +28,8 @@ class GoToFloor(smach.State, Logger):
     def execute(self, userdata):
 
         #x,y,yaw = 2.74,-0.17,-1.57
+        if userdata.position == 5:
+            userdata.position = 0
         
         x = userdata.search_locations[userdata.position][0]
         y = userdata.search_locations[userdata.position][1]

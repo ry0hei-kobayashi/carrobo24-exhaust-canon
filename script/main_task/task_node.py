@@ -31,24 +31,51 @@ class StateMachine:
         self.sm.userdata.position = 0
         self.sm.userdata.search_locations = {
             #key:{x,y,yaw}
-            0: (0.74, 0.70, 1.57  ), #中央 
-            1: (0.54, 0.70,   1.3 ), 
-            2: (0.14, 0.70, 1.57),
-            3: (-0.34, 0.70,     1.57    ),
-            4: (-0.54, 0.70,     1.57    ), #一番手前
+            0: (0.74, 0.65, 1.57  ), #中央 
+            1: (0.54, 0.65,   1.3 ), 
+            2: (0.74, 0.5, 1.57  ), #中央 
+            3: (0.14, 0.65, 1.57),
+            4: (-0.54, 0.65,     1.3   ), #一番手前
+            5: (0.90, 0.4,     1.00   ), #一番手前
+            6: (0.54, 0.5,   1.5 ), 
+            7: (0.54, 0.4,   1.57 ), 
             }
+        #self.sm.userdata.deposit_locations = {
+        #    #key:{x,y,yaw}
+        #    'kitchen':     (0.95, -0.23, -1.57  ), 
+        #    'tool':        (-0.14, 0.22, -1.57 ),  #right
+        #    'task':        (2.30, -0.15, -1.57 ), 
+        #    'food1':       (1.53, -0.20, -1.57    ), #right #TODO 増やして，randomでfoodxを回したい
+        #    'food2':       (1.66, -0.20, -1.57    ), #left
+        #    #'food3':       (1.23, -0.20, -1.57    ), #left
+        #    'shape':       (0.14, 0.22, -1.57    ), #left
+        #    'orientation': (1.15, -0.20, -1.57    ), 
+        #    'unknown':     (2.74, -0.15, -1.57    ),
+        #    }
         self.sm.userdata.deposit_locations = {
             #key:{x,y,yaw}
-            'kitchen':     (0.95, -0.23, -1.57  ), 
-            'tool':        (-0.14, 0.22, -1.57 ),  #right
-            'task':        (2.30, -0.15, -1.57 ), 
-            'food1':       (1.53, -0.20, -1.57    ), #right #TODO 増やして，randomでfoodxを回したい
-            'food2':       (1.66, -0.20, -1.57    ), #left
+            'kitchen':     (0.95, -0.26, -1.57  ),
+            'tool':        (-0.14, 0.29, -1.57 ),  #right
+            'task':        (2.30, -0.22, -1.57 ),
+            'food1':       (1.53, -0.27, -1.57    ), #right #TODO 増やして，randomでfoodxを回したい
+            'food2':       (1.66, -0.27, -1.57    ), #left
             #'food3':       (1.23, -0.20, -1.57    ), #left
-            'shape':       (0.14, 0.22, -1.57    ), #left
-            'orientation': (1.15, -0.20, -1.57    ), 
-            'unknown':     (2.74, -0.15, -1.57    ),
+            'shape':       (0.14, 0.19, -1.57    ), #left
+            'orientation': (1.15, -0.18, -1.57    ),
+            'unknown':     (2.74, -0.20, -1.57    ),
             }
+        #self.sm.userdata.deposit_locations = {
+        #    #key:{x,y,yaw}
+        #    'kitchen':     (0.95, -0.26, -1.57  ), 
+        #    'tool':        (-0.14, 0.22, -1.57 ),  #right
+        #    'task':        (2.30, -0.15, -1.57 ), 
+        #    'food1':       (1.53, -0.20, -1.57    ), #right #TODO 増やして，randomでfoodxを回したい
+        #    'food2':       (1.66, -0.20, -1.57    ), #left
+        #    #'food3':       (1.23, -0.20, -1.57    ), #left
+        #    'shape':       (0.14, 0.22, -1.57    ), #left
+        #    'orientation': (1.15, -0.20, -1.57    ), 
+        #    'unknown':     (2.74, -0.15, -1.57    ),
+        #    }
 
         # self.sm.userdata.locations = None
         self.sm.userdata.food_select = 1
@@ -78,7 +105,8 @@ class StateMachine:
                 grasp.GraspFromFloor(["next", "failure", "nothing"]),
                 transitions={
                     "next": "DepositObject",
-                    "failure": "GraspFromFloor",
+                    #"failure": "GraspFromFloor",
+                    "failure": "Recog",
                     "nothing" : "GoToFloor",
                 },
             )
@@ -110,6 +138,8 @@ def main():
     rospy.init_node(os.path.basename(__file__).split(".")[0])
 
     cls = StateMachine()
+
+
     rospy.on_shutdown(cls.delete)
     try:
         cls.run()

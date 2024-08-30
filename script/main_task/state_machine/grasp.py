@@ -1,18 +1,23 @@
-#!/usr/bin/env python3
+#/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import rospy
 import smach
 import numpy as np
 from hsrlib.hsrif import HSRInterfaces
-# from hsrnavlib import LibHSRNavigation
+from hsrlib.utils import description, utils
 from tam_object_detection.srv import ObjectDetectionService, ObjectDetectionServiceRequest
 from tamlib.tf import Transform
 from tamlib.utils import Logger
 from navigation_tools.nav_tool_lib import NavModule
-from geometry_msgs.msg import Pose2D
+from geometry_msgs.msg import Pose2D, WrenchStamped
 from tam_grasp.srv import GraspPoseEstimationService, GraspPoseEstimationServiceRequest
 from geometry_msgs.msg import Pose, Point, Quaternion
+from hsrb_interface.exceptions import *
+import hsrb_interface
+from . import action_robot
+
+GRASP_THRESHOLD = -0.85
 
 
 class GraspFromFloor(smach.State, Logger):
@@ -24,37 +29,60 @@ class GraspFromFloor(smach.State, Logger):
 
         self.tamtf = Transform()
         self.hsrif = HSRInterfaces()
-        # self.navigation = LibHSRNavigation()
+        self.description = description.load_robot_description()
         self.nav_module = NavModule("pumas")
-        
-        # srv_detection = rospy.ServiceProxy("hsr_head_rgbd/object_detection/service", ObjectDetectionService)
-        # rospy.wait_for_service("hsr_head_rgbd/object_detection/service", timeout=100)
         self.srv_grasp = rospy.ServiceProxy("grasp_pose_estimation/service", GraspPoseEstimationService)
+
+        self.a_robot = action_robot.RobotWithAction()
         rospy.wait_for_service("grasp_pose_estimation/service", timeout=100)
+
+        #wrench
+        #self.a_robot = action_robot.RobotWithAction()
+        self.threshold = -28.0
+        self.current_val = None
+
+ 
+    #def grasp_check(self, hand_motor_joint_before:float) -> bool:
+    #    states = self.rosif.sub.joint_states()
+    #    hand_motor_joint_after = round(states.position[20], 3)
+    #    rospy.sleep(0.1)
+    #    self.loginfo(f"hand_motor: {hand_motor_joint_after}")
+    #    self.logerr("grasp.->chk grasping")
+    #    #self.loginfo(f"差分：{abs(hand_motor_joint_after - hand_motor_joint_before)}
+
+    #    if abs(hand_motor_joint_after - hand_motor_joint_before) > 0.07: 
+    #        return True
+    #    else:
+    #        return False
+
+    def wrench_cb(self, msg):
+        try:
+            self.current_value = msg.wrench.force.z  # TODO
+            if self.current_value > self.threshold:
+                self.a_robot.cancel_arm()
+                self.pushed = True
+                return
+        except:
+            rospy.logerr("for traceback")
+            import traceback
+            traceback.print_exc()
+    
+    def wrench_gripper_cb(self, msg):
+        try:
+            self.current_value = msg.wrench.force.z  # TODO
+            if self.current_value > self.threshold_for_gripper:
+                self.pushed_for_gripper = True
+                self.a_robot.applyforce_client.cancel_goal()
+        except:
+            rospy.logerr("for traceback")
+            import traceback
+            traceback.print_exc()
+    
         
-        # Service
-        # self.srv_detection = rospy.ServiceProxy(
-        #     "hsr_head_rgbd/object_detection/service", ObjectDetectionService
-        # )
-        # self.srv_detection(ObjectDetectionServiceRequest())
-        
-    # def grasp_failure(self):
-    #     self.logwarn("Grasp FAILURE")
-    #     userdata.grasp_counter += 1
-    #     try:
-    #         # 失敗したらオブジェクトリストから先頭を消す
-    #         userdata.detected_obj.pop(0)
-    #     except Exception as e:
-    #         rospy.loginfo('オブジェクトもうない')
-    #     if userdata.grasp_counter > 3:
-    #         # ３回失敗して認識へ
-    #         userdata.grasp_counter = 0
-    #         return "nothing"
-    #     return "failure"
 
     def execute(self, userdata):
-        
         self.hsrif.gripper.command(1.2)
+        
         
         i = 0
         try:
@@ -69,51 +97,175 @@ class GraspFromFloor(smach.State, Logger):
             rospy.logerr(e)
             userdata.grasp_counter = 0
             return "nothing"
-        # print(gpe_req)
+
         gpe_res = self.srv_grasp(gpe_req)
-        # rospy.logerr(userdata.depth)
-        # rospy.logerr(userdata.detected_obj[i]['seg'])
-        # rospy.logerr(userdata.detected_obj[i]['pose'])
-    
+        if gpe_res.success is False:
+            return "nothing"
         rospy.loginfo(userdata.detected_obj[i]['bbox'].name)
         rospy.loginfo(gpe_res.grasp.pose)
-        
-        pose = Pose()
-        pose.position = Point(gpe_res.grasp.pose.position.x,    gpe_res.grasp.pose.position.y, gpe_res.grasp.pose.position.z)
-        pose.orientation = Quaternion(gpe_res.grasp.pose.orientation.x, gpe_res.grasp.pose.orientation.y, gpe_res.grasp.pose.orientation.z, gpe_res.grasp.pose.orientation.w)
-        # move end effector
-        self.hsrif.whole_body.move_end_effector_pose(pose, "task")
 
-        axis = (0, 0, 1)
-        self.hsrif.whole_body.move_end_effector_by_line(axis, 0.01, sync=True)
-        print("3,grip")
+        set_grasp_pose = self.tamtf.get_pose_with_offset(
+            self.description.frame.base,
+            'task',
+            gpe_res.grasp.pose,
+            'grasp'
+        )
+
+        #self.hsrif.whole_body.linear_weight = 1
+        #self.hsrif.whole_body.angular_weight = 100
+        #self.hsrif.whole_body.joint_weights = {
+        #    "arm_lift_joint": 1.0,
+        #    "arm_flex_joint": 100.0,
+        #    "arm_roll_joint": 1.0,
+        #    "wrist_flex_joint": 1.0,
+        #    "wrist_roll_joint": 1.0,
+        #}
+
+        
+           
+        pose = Pose()
+        pose.position = Point(gpe_res.grasp.pose.position.x,
+                              gpe_res.grasp.pose.position.y, 
+                              gpe_res.grasp.pose.position.z - 0.01)
+
+        pose.orientation = Quaternion(gpe_res.grasp.pose.orientation.x, 
+                                      gpe_res.grasp.pose.orientation.y, 
+                                      gpe_res.grasp.pose.orientation.z, 
+                                      gpe_res.grasp.pose.orientation.w)
+
+        rospy.logwarn('grasp.-> contact to the object')
+        try: 
+            self.hsrif.whole_body.move_end_effector_pose(pose, "task")
+        except Exception as e:
+            pose = Pose()
+            pose.position = Point(gpe_res.grasp.pose.position.x,
+                                  gpe_res.grasp.pose.position.y, 
+                                  gpe_res.grasp.pose.position.z - 0.05)
+
+            pose.orientation = Quaternion(gpe_res.grasp.pose.orientation.x, 
+                                          gpe_res.grasp.pose.orientation.y, 
+                                          gpe_res.grasp.pose.orientation.z, 
+                                          gpe_res.grasp.pose.orientation.w)
+            self.hsrif.whole_body.move_end_effector_pose(pose, "task")
+
+
+
+        # move end effector
+        
+        #pose = Pose()
+
+        #pose.position = Point(gpe_res.grasp.pose.position.x,
+        #                      gpe_res.grasp.pose.position.y, 
+        #                      gpe_res.grasp.pose.position.z - 0.0)
+
+        #pose.orientation = Quaternion(gpe_res.grasp.pose.orientation.x, 
+        #                              gpe_res.grasp.pose.orientation.y, 
+        #                              gpe_res.grasp.pose.orientation.z, 
+        #                              gpe_res.grasp.pose.orientation.w)
+        #rospy.logwarn('grasp.-> contact to the object')
+        #self.hsrif.whole_body.move_end_effector_pose(pose, "task")
+
+        #z_offset = 0.05
+        #try:
+        #    rospy.logwarn('grasp.-> contact to the object')
+        #    self.hsrif.whole_body.move_end_effector_pose(pose, "task")
+        #    try:
+        #        with TemporarySubscriber('/hsrb/wrist_wrench/raw', WrenchStamped, self.wrench_cb):
+        #            rate = rospy.Rate(10)
+        #            rospy.logwarn('grasp.-> arm down down down')
+        #            pose.position.z +=  0.01
+        #            self.hsrif.whole_body.move_end_effector_pose((pose), "task")
+
+        #    except FollowTrajectoryError: 
+        #        rospy.logwarn('grasp.-> arm reached to the object or floor')
+        #        pose.position.z -= 0.04
+        #        self.hsrif.whole_body.move_end_effector_pose(pose, "task")
+        #        self.hsrif.gripper.apply_force(1.0)
+
+        #    except:
+        #        pose.position.z -= 0.03
+        #        self.hsrif.whole_body.move_end_effector_pose(pose, "task")
+        #        self.hsrif.gripper.apply_force(1.0)
+
+        #except:
+        #    self.hsrif.whole_body.move_end_effector_pose(geometry.pose(z=0.03), "task")
+
+        #gripper force
+        self.pushed_for_gripper = False
+        with TemporarySubscriber('/hsrb/wrist_wrench/raw', WrenchStamped, self.wrench_cb):
+            rate = rospy.Rate(100)
+            rospy.logwarn('grasp.-> gripper contact')
+            gripper_val = 0
+            while not rospy.is_shutdown() and not self.pushed_for_gripper:
+                hand_motor_joint = self.hsrif.whole_body.joint_positions['hand_motor_joint']
+                self.a_robot.gripper_applyforce(1.0)
+                if hand_motor_joint < 1:
+                    break
+                rate.sleep()
+            self.a_robot.apply_force_client.cancel_goal()
+        
+
+
+        #axis = (0, 0, 1)
+        #self.hsrif.whole_body.move_end_effector_by_line(axis, 0.01, sync=True)
         
         self.hsrif.gripper.apply_force(1.0)
         
-        
-        #if userdata.obj_name in ["030_FORK", "031_SPOON","041_SMALL_MARKER", "026_SPONGE","024_BOWL","040_LARGE_MARKER"]:
+        #axis = (0, 0, -1)
+        try:
+            self.hsrif.whole_body.move_to_joint_positions({'arm_lift_joint': 0.2,
+                                                           'arm_flex_joint': -0.5,
+                                                           'arm_roll_joint': 0.0,
+                                                           'wrist_flex_joint': -1.57,
+                                                           'wrist_roll_joint': 0.00,})
+                                                        
+            #self.hsrif.whole_body.move_end_effector_by_line(axis, 0.5, sync=False)
+        except Exception as e:
+            rospy.logerr("grasp.-> lifting obj error")
+
+            self.hsrif.whole_body.move_to_joint_positions({'arm_lift_ojoint': 0.2,
+                                                           'arm_flex_joint': -0.5,
+                                                           'arm_roll_joint': 0.0,
+                                                           'wrist_flex_joint': -1.57,
+                                                           'wrist_roll_joint': 0.00,})
+            #self.hsrif.whole_body.move_end_effector_by_line(axis, 0.45, sync=False)
+
+            #self.nav_module(pose, nav_type='hsr', nav_mode='rel')
+
+            goal = Pose2D(0.15, 0.0, 0.0)                      
+            self.nav_module(goal, nav_type="hsr", nav_mode="rel", nav_timeout=0, goal_distance=0, angle_correction=False, obstacle_detection=False)
+
+
         # m hand_motor_joint
         hand_joint = self.hsrif.whole_body.joint_positions['hand_motor_joint']
         rospy.loginfo("------------------------------------")
         rospy.loginfo('hand_motor_joint:={}'.format(hand_joint))
         rospy.loginfo("------------------------------------")
-        #error_grasping = False
-        #if (hand_joint > GRASP_THRESHOLD):
-        #    return 'success'
-        """else:
-            error_grasping = True
-            #userdata.objectstf = []
-            omni_base.go_rel(-0.1, 0, 0)
-            return 'drop'
-        """
-        
-        axis = (0, 0, -1)
+
         try:
-            self.hsrif.whole_body.move_end_effector_by_line(axis, 0.8, sync=False)
-        except Exception as e:
-            goal = Pose2D(0.0, -0.5, 0.0)
-            self.nav_module(pose, nav_type='hsr', nav_mode='rel', nav_timeout=0)
-            rospy.logerr("持ち上げエラー")
-        print("4,motiage")
+            goal = Pose2D(0.15, 0.0, 0.0)                      
+            self.nav_module(goal, nav_type="hsr", nav_mode="rel", nav_timeout=0, goal_distance=0, angle_correction=False, obstacle_detection=False)
+        except:
+            pass
+ 
+
+        if (hand_joint > GRASP_THRESHOLD):
+            return 'next'
+        else:
+            return 'failure' 
+ 
         
-        return "next"
+
+class TemporarySubscriber:
+    def __init__(self, name, msg, cb, *args):
+        self.name = name
+        self.msg = msg
+        self.cb = cb
+        self.args = args
+
+    def __enter__(self):
+        self.sub = rospy.Subscriber(self.name, self.msg, self.cb, *self.args)
+        return self.sub
+
+    def __exit__(self, exctype, excval, traceback):
+        self.sub.unregister()
